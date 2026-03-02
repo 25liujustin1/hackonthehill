@@ -10,6 +10,16 @@ interface Capsule {
   lat: number;
   lng: number;
   created_at: string;
+  approved?: boolean;
+  author_id?: string; // 👈 Add this line!
+}
+
+interface Capsule {
+  id: string;
+  title: string;
+  lat: number;
+  lng: number;
+  created_at: string;
 }
 
 interface Post {
@@ -33,7 +43,7 @@ function haversineMeters(lat1: number, lng1: number, lat2: number, lng2: number)
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-const UNLOCK_RADIUS_M = 30; // Standard scavenger hunt radius
+const UNLOCK_RADIUS_M = 50; // Standard scavenger hunt radius
 
 export default function MapPage() {
   const supabase = createClient();
