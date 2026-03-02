@@ -255,10 +255,12 @@ export default function MapPage() {
   center={center}
   zoom={zoom}
   onBoundsChanged={({ center, zoom }) => { setCenter(center); setZoom(zoom); }}
-  // FIX: Only close panels if the click was actually on the map background, 
-  // not accidentally triggered by a panel closing
+  // Corrected TypeScript handling for event.target
   onClick={({ event }) => { 
-    if (event.target.tagName === 'CANVAS' || event.target.className.includes('pigeon-click-block')) {
+    const target = event.target as HTMLElement; 
+    
+    // Check if the click was on the map canvas or the attribution block
+    if (target.tagName === 'CANVAS' || (target.className && typeof target.className === 'string' && target.className.includes('pigeon-click-block'))) {
       setSelectedCapsule(null); 
       setShowDropPanel(false); 
     }

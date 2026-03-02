@@ -5,13 +5,15 @@ import { createClient } from '@/lib/supabaseClient'
 export default function LoginPage() {
   const supabase = createClient()
 
-  async function signIn() {
-    // provider examples: 'google', 'github', etc.
-    // UCLA SSO will be whatever provider you configure in Supabase (OIDC/SAML brokered as OIDC).
+async function signIn() {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo: `${location.origin}/auth/callback`,
+        // This hints to Google to only show UCLA accounts
+        queryParams: {
+          hd: 'g.ucla.edu', 
+        },
       },
     })
   }
