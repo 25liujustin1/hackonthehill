@@ -35,7 +35,12 @@ function haversineMeters(lat1: number, lng1: number, lat2: number, lng2: number)
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-const UNLOCK_RADIUS_M = 50; // Standard scavenger hunt radius
+const UNLOCK_RADIUS_M = 50;
+
+// Helper to detect hardcoded landmark IDs
+function isFixedCapsule(id: string): boolean {
+  return id.startsWith('00000000-0000-0000-0000-');
+}
 
 const FIXED_CAPSULES: Capsule[] = [
   // --- North Campus & Humanities ---
@@ -139,29 +144,27 @@ export default function MapPage() {
     return haversineMeters(userPos[0], userPos[1], capsule.lat, capsule.lng) <= UNLOCK_RADIUS_M;
   }
 
-async function handleDeletePost(postId: string) {
-  if (!user) return;
-  if (!confirm("Delete this memory forever?")) return;
+  async function handleDeletePost(postId: string) {
+    if (!user) return;
+    if (!confirm("Delete this memory forever?")) return;
 
-  try {
-    const { error } = await supabase
-      .from("posts")
-      .delete()
-      .eq("id", postId)
-      .eq("author_id", user.id); // Security: ensures only the author can delete
+    try {
+      const { error } = await supabase
+        .from("posts")
+        .delete()
+        .eq("id", postId)
+        .eq("author_id", user.id);
 
-    if (error) throw error;
-
-    // Remove the post from the local state so the UI updates immediately
-    setCapsulePosts((prev) => prev.filter((p) => p.id !== postId));
-  } catch (e) {
-    console.error(e);
-    alert("Error: You can only delete your own posts.");
+      if (error) throw error;
+      setCapsulePosts((prev) => prev.filter((p) => p.id !== postId));
+    } catch (e) {
+      console.error(e);
+      alert("Error: You can only delete your own posts.");
+    }
   }
-}
 
   async function handleDeleteCapsule(capsuleId: string) {
-    if (!user || capsuleId.startsWith('fixed-')) return;
+    if (!user || isFixedCapsule(capsuleId)) return;
     if (!confirm("Are you sure you want to delete this capsule?")) return;
     try {
       const { error } = await supabase.from("capsules").delete().eq("id", capsuleId);
@@ -221,117 +224,115 @@ async function handleDeletePost(postId: string) {
     });
   }
 
-async function handleDrop() {
-  if (!user || !userPos || !dropFile || !dropTitle.trim()) return;
-  setDropping(true);
-  try {
-    let targetCapsule = null;
-    let minDistance = 40;
-
-    for (const cap of capsules) {
-      const dist = haversineMeters(userPos[0], userPos[1], cap.lat, cap.lng);
-      if (dist < minDistance) {
-        minDistance = dist;
-        targetCapsule = cap;
-      }
-    }
-
-    let finalCapsuleId;
-
-    if (targetCapsule) {
-      finalCapsuleId = targetCapsule.id;
-      // If hardcoded, ensure the DB has a record of it before we try to post to it
-      if (finalCapsuleId.startsWith('fixed-')) {
-        const { error: upsertErr } = await supabase.from("capsules").upsert({
-          id: targetCapsule.id,
-          title: targetCapsule.title,
-          lat: targetCapsule.lat,
-          lng: targetCapsule.lng,
-          author_id: user.id
-        }, { onConflict: 'id' });
-        if (upsertErr) throw upsertErr;
-      }
-    } else {
-      const { data: cap, error: capErr } = await supabase
-        .from("capsules")
-        .insert({ title: dropTitle.trim(), lat: userPos[0], lng: userPos[1], author_id: user.id })
-        .select().single();
-      if (capErr || !cap) throw capErr || new Error("Failed to create capsule");
-      finalCapsuleId = cap.id;
-      setCapsules((prev) => [cap as Capsule, ...prev]);
-    }
-
-    // Now that we are 100% sure finalCapsuleId exists in the DB, run the post logic
-    const ext = dropFile.name.split(".").pop();
-    const path = `${user.id}/${finalCapsuleId}-${Date.now()}.${ext}`;
-    const { error: uploadErr } = await supabase.storage.from("capsule-media").upload(path, dropFile);
-    if (uploadErr) throw uploadErr;
-    
-    const { error: postErr } = await supabase.from("posts").insert({
-      capsule_id: finalCapsuleId,
-      caption: dropCaption.trim() || null,
-      media_path: path,
+  // Helper: ensure a fixed landmark exists in the DB before posting to it
+  async function upsertFixedCapsule(capsule: Capsule) {
+    const { error } = await supabase.from("capsules").upsert({
+      id: capsule.id,
+      title: capsule.title,
+      lat: capsule.lat,
+      lng: capsule.lng,
       author_id: user.id,
-    });
-    if (postErr) throw postErr;
-
-    setShowDropPanel(false);
-    setDropTitle("");
-    setDropCaption("");
-    setDropFile(null);
-    if (targetCapsule) alert(`📍 Added to: ${targetCapsule.title}`);
-  } catch (e: any) {
-    console.error("Drop Error:", e);
-    alert(`Error: ${e.message || "Failed to drop capsule"}`);
+    }, { onConflict: 'id' });
+    if (error) throw error;
   }
-  setDropping(false);
-}
 
-async function handleAddPost() {
-  if (!user || !selectedCapsule || !addFile) return;
-  setAddingPost(true);
-  try {
-    if (selectedCapsule.id.startsWith('fixed-')) {
-      const { error: upsertErr } = await supabase.from("capsules").upsert({
-        id: selectedCapsule.id,
-        title: selectedCapsule.title,
-        lat: selectedCapsule.lat,
-        lng: selectedCapsule.lng,
-        author_id: user.id
-      }, { onConflict: 'id' });
-      if (upsertErr) throw upsertErr;
-    }
+  async function handleDrop() {
+    if (!user || !userPos || !dropFile || !dropTitle.trim()) return;
+    setDropping(true);
+    try {
+      let targetCapsule: Capsule | null = null;
+      let minDistance = UNLOCK_RADIUS_M; // ✅ Fixed: use same constant as unlock radius
 
-    const ext = addFile.name.split(".").pop();
-    const path = `${user.id}/${selectedCapsule.id}-${Date.now()}.${ext}`;
-    const { error: uploadErr } = await supabase.storage.from("capsule-media").upload(path, addFile);
-    if (uploadErr) throw uploadErr;
+      for (const cap of capsules) {
+        const dist = haversineMeters(userPos[0], userPos[1], cap.lat, cap.lng);
+        if (dist < minDistance) {
+          minDistance = dist;
+          targetCapsule = cap;
+        }
+      }
 
-    const { data: post, error: postErr } = await supabase
-      .from("posts")
-      .insert({
-        capsule_id: selectedCapsule.id,
-        caption: addCaption.trim() || null,
+      let finalCapsuleId: string;
+
+      if (targetCapsule) {
+        finalCapsuleId = targetCapsule.id;
+        // ✅ Fixed: check for the actual ID format used by hardcoded landmarks
+        if (isFixedCapsule(finalCapsuleId)) {
+          await upsertFixedCapsule(targetCapsule);
+        }
+      } else {
+        const { data: cap, error: capErr } = await supabase
+          .from("capsules")
+          .insert({ title: dropTitle.trim(), lat: userPos[0], lng: userPos[1], author_id: user.id })
+          .select().single();
+        if (capErr || !cap) throw capErr || new Error("Failed to create capsule");
+        finalCapsuleId = cap.id;
+        setCapsules((prev) => [cap as Capsule, ...prev]);
+      }
+
+      const ext = dropFile.name.split(".").pop();
+      const path = `${user.id}/${finalCapsuleId}-${Date.now()}.${ext}`;
+      const { error: uploadErr } = await supabase.storage.from("capsule-media").upload(path, dropFile);
+      if (uploadErr) throw uploadErr;
+
+      const { error: postErr } = await supabase.from("posts").insert({
+        capsule_id: finalCapsuleId,
+        caption: dropCaption.trim() || null,
         media_path: path,
         author_id: user.id,
-      })
-      .select().single();
+      });
+      if (postErr) throw postErr;
 
-    if (postErr) throw postErr;
-
-    if (post) {
-      const { data } = supabase.storage.from("capsule-media").getPublicUrl(path);
-      setCapsulePosts((prev) => [{ ...(post as Post), media_url: data.publicUrl }, ...prev]);
+      setShowDropPanel(false);
+      setDropTitle("");
+      setDropCaption("");
+      setDropFile(null);
+      if (targetCapsule) alert(`📍 Added to: ${targetCapsule.title}`);
+    } catch (e: any) {
+      console.error("Drop Error:", e);
+      alert(`Error: ${e.message || "Failed to drop capsule"}`);
     }
-    setShowAddPost(false);
-    setAddCaption("");
-    setAddFile(null);
-  } catch (e: any) {
-    console.error("Add Post Error:", e);
-    alert(`Error: ${e.message || "Failed to add photo"}`);
+    setDropping(false);
   }
-  setAddingPost(false);
-}
+
+  async function handleAddPost() {
+    if (!user || !selectedCapsule || !addFile) return;
+    setAddingPost(true);
+    try {
+      // ✅ Fixed: check for the actual ID format used by hardcoded landmarks
+      if (isFixedCapsule(selectedCapsule.id)) {
+        await upsertFixedCapsule(selectedCapsule);
+      }
+
+      const ext = addFile.name.split(".").pop();
+      const path = `${user.id}/${selectedCapsule.id}-${Date.now()}.${ext}`;
+      const { error: uploadErr } = await supabase.storage.from("capsule-media").upload(path, addFile);
+      if (uploadErr) throw uploadErr;
+
+      const { data: post, error: postErr } = await supabase
+        .from("posts")
+        .insert({
+          capsule_id: selectedCapsule.id,
+          caption: addCaption.trim() || null,
+          media_path: path,
+          author_id: user.id,
+        })
+        .select().single();
+
+      if (postErr) throw postErr;
+
+      if (post) {
+        const { data } = supabase.storage.from("capsule-media").getPublicUrl(path);
+        setCapsulePosts((prev) => [{ ...(post as Post), media_url: data.publicUrl }, ...prev]);
+      }
+      setShowAddPost(false);
+      setAddCaption("");
+      setAddFile(null);
+    } catch (e: any) {
+      console.error("Add Post Error:", e);
+      alert(`Error: ${e.message || "Failed to add photo"}`);
+    }
+    setAddingPost(false);
+  }
 
   return (
     <div style={{ width: "100vw", height: "100vh", position: "relative", fontFamily: "'DM Sans', sans-serif", background: "#0a0a0a" }}>
@@ -490,23 +491,19 @@ async function handleAddPost() {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
             <div>
               <h2 style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 18, fontWeight: 700 }}>{selectedCapsule.title}</h2>
-<p style={{ fontSize: 11, color: "#555", marginTop: 2 }}>
-  {selectedCapsule.created_at ? new Date(selectedCapsule.created_at).toLocaleDateString() : 'Iconic Location'}
-</p>
+              <p style={{ fontSize: 11, color: "#555", marginTop: 2 }}>
+                {selectedCapsule.created_at ? new Date(selectedCapsule.created_at).toLocaleDateString() : 'Iconic Location'}
+              </p>
             </div>
-<div style={{ display: "flex", gap: 8 }}>
-              {/* 👇 1. THIS IS STEP 2: The new ownership condition 👇 */}
-              {!selectedCapsule.id.startsWith('fixed-') && user?.id === selectedCapsule.author_id && (
+            <div style={{ display: "flex", gap: 8 }}>
+              {!isFixedCapsule(selectedCapsule.id) && user?.id === selectedCapsule.author_id && (
                 <button onClick={() => handleDeleteCapsule(selectedCapsule.id)} style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)", color: "#ef4444", padding: "6px 12px", borderRadius: 10, fontSize: 12, cursor: "pointer" }}>🗑️ Delete</button>
               )}
-              
-              {/* 👇 2. ADD PHOTO BUTTON (Restored) 👇 */}
               <button onClick={() => setShowAddPost(!showAddPost)} style={{ ...btnStyle, padding: "6px 14px", fontSize: 12, width: 'auto' }}>+ Add photo</button>
-              
               <button onClick={() => setSelectedCapsule(null)} style={{ background: "none", border: "none", color: "#555", fontSize: 20, cursor: "pointer" }}>✕</button>
             </div>
           </div>
-          {/* ... (Post rendering logic remains identical) */}
+
           {showAddPost && (
             <div style={{ background: "rgba(255,255,255,0.04)", borderRadius: 12, padding: 14, marginBottom: 16, border: "1px solid rgba(255,255,255,0.07)" }}>
               <input placeholder="Caption" value={addCaption} onChange={(e) => setAddCaption(e.target.value)} style={inputStyle} />
@@ -518,42 +515,44 @@ async function handleAddPost() {
               </div>
             </div>
           )}
-          {loadingPosts ? <div style={{ textAlign: "center", color: "#555", padding: "24px 0" }}>Loading memories...</div> : capsulePosts.length === 0 ? <div style={{ textAlign: "center", color: "#444", padding: "24px 0" }}>No posts yet.</div> : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-{capsulePosts.map((post) => (
-  <div key={post.id} style={{ position: 'relative', background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, overflow: "hidden" }}>
-    
-    {/* Delete Button (Only shows for the author) */}
-    {user?.id === post.author_id && (
-      <button 
-        onClick={(e) => { e.stopPropagation(); handleDeletePost(post.id); }}
-        style={{
-          position: 'absolute', top: 8, right: 8,
-          background: "rgba(0,0,0,0.5)", border: "none", color: "#ff4444",
-          width: 28, height: 28, borderRadius: "50%", cursor: "pointer",
-          zIndex: 10, fontSize: 14, backdropFilter: 'blur(4px)'
-        }}
-      >🗑️</button>
-    )}
 
-    {post.media_url && (
-      <img src={post.media_url} alt={post.caption ?? ""} style={{ width: "100%", maxHeight: 260, objectFit: "cover", display: "block" }} />
-    )}
-    <div style={{ padding: "12px 14px" }}>
-      <p style={{ fontSize: 11, color: "#555", marginBottom: 6 }}>
-        🕰 {new Date(post.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-      </p>
-      {post.caption && (
-        <p style={{ fontSize: 13, color: "#ccc", lineHeight: 1.5 }}>{post.caption}</p>
-      )}
-    </div>
-  </div>
-))}
-</div>
+          {loadingPosts ? (
+            <div style={{ textAlign: "center", color: "#555", padding: "24px 0" }}>Loading memories...</div>
+          ) : capsulePosts.length === 0 ? (
+            <div style={{ textAlign: "center", color: "#444", padding: "24px 0" }}>No posts yet.</div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              {capsulePosts.map((post) => (
+                <div key={post.id} style={{ position: 'relative', background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, overflow: "hidden" }}>
+                  {user?.id === post.author_id && (
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); handleDeletePost(post.id); }}
+                      style={{
+                        position: 'absolute', top: 8, right: 8,
+                        background: "rgba(0,0,0,0.5)", border: "none", color: "#ff4444",
+                        width: 28, height: 28, borderRadius: "50%", cursor: "pointer",
+                        zIndex: 10, fontSize: 14, backdropFilter: 'blur(4px)'
+                      }}
+                    >🗑️</button>
+                  )}
+                  {post.media_url && (
+                    <img src={post.media_url} alt={post.caption ?? ""} style={{ width: "100%", maxHeight: 260, objectFit: "cover", display: "block" }} />
+                  )}
+                  <div style={{ padding: "12px 14px" }}>
+                    <p style={{ fontSize: 11, color: "#555", marginBottom: 6 }}>
+                      🕰 {new Date(post.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                    </p>
+                    {post.caption && (
+                      <p style={{ fontSize: 13, color: "#ccc", lineHeight: 1.5 }}>{post.caption}</p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
         </div>
       )}
-      {/* ... (Auth Modal and Location Warning UI remain identical) */}
+
       {showAuthModal && (
         <div onClick={() => setShowAuthModal(false)} style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center" }}>
           <div className="panel" onClick={(e) => e.stopPropagation()} style={{ background: "rgba(15,15,15,0.98)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 20, padding: 32, maxWidth: 320, width: "90%", textAlign: "center", color: "#fff" }}>
