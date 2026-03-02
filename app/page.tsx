@@ -10,6 +10,16 @@ interface Capsule {
   lat: number;
   lng: number;
   created_at: string;
+  approved?: boolean;
+  author_id?: string; // 👈 Add this line!
+}
+
+interface Capsule {
+  id: string;
+  title: string;
+  lat: number;
+  lng: number;
+  created_at: string;
 }
 
 interface Post {
@@ -33,7 +43,7 @@ function haversineMeters(lat1: number, lng1: number, lat2: number, lng2: number)
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-const UNLOCK_RADIUS_M = 30; // Standard scavenger hunt radius
+const UNLOCK_RADIUS_M = 50; // Standard scavenger hunt radius
 
 export default function MapPage() {
   const supabase = createClient();
@@ -397,10 +407,15 @@ export default function MapPage() {
               <h2 style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 18, fontWeight: 700 }}>{selectedCapsule.title}</h2>
               <p style={{ fontSize: 11, color: "#555", marginTop: 2 }}>{new Date(selectedCapsule.created_at).toLocaleDateString()}</p>
             </div>
-            <div style={{ display: "flex", gap: 8 }}>
-              {selectedCapsule.id !== 'fixed-bplate-capsule' && (
+<div style={{ display: "flex", gap: 8 }}>
+              {/* 👇 1. THIS IS STEP 2: The new ownership condition 👇 */}
+              {!selectedCapsule.id.startsWith('fixed-') && user?.id === selectedCapsule.author_id && (
                 <button onClick={() => handleDeleteCapsule(selectedCapsule.id)} style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)", color: "#ef4444", padding: "6px 12px", borderRadius: 10, fontSize: 12, cursor: "pointer" }}>🗑️ Delete</button>
               )}
+              
+              {/* 👇 2. ADD PHOTO BUTTON (Restored) 👇 */}
+              <button onClick={() => setShowAddPost(!showAddPost)} style={{ ...btnStyle, padding: "6px 14px", fontSize: 12, width: 'auto' }}>+ Add photo</button>
+              
               <button onClick={() => setSelectedCapsule(null)} style={{ background: "none", border: "none", color: "#555", fontSize: 20, cursor: "pointer" }}>✕</button>
             </div>
           </div>
