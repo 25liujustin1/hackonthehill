@@ -373,11 +373,11 @@ async function handleAddPost() {
                   padding: "4px 8px", borderRadius: 6, border: "1px solid rgba(255,255,255,0.1)",
                   display: "flex", flexDirection: "column", alignItems: "center", gap: 2
                 }}>
-                  <span style={{ fontSize: 11, fontWeight: 600 }}>{cap.title}</span>
-                  {distToCap !== null && (
+                  {zoom >= 16 && <span style={{ fontSize: 11, fontWeight: 600 }}>{cap.title}</span>}
+                  {zoom >= 17 && distToCap !== null && (
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                       <span style={{ fontSize: 10, color: unlocked ? "#4ade80" : "#fbbf24" }}>{distToCap}m away</span>
-                      {!unlocked && <span style={{ fontSize: 9, color: "#666", fontStyle: 'italic' }}>Reach 50m to unlock</span>}
+                      {!unlocked && <span style={{ fontSize: 9, color: "#666", fontStyle: 'italic' }}>Reach 30m to unlock</span>}
                     </div>
                   )}
                 </div>
