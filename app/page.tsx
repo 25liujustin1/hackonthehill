@@ -39,36 +39,36 @@ const UNLOCK_RADIUS_M = 50; // Standard scavenger hunt radius
 
 const FIXED_CAPSULES: Capsule[] = [
   // --- North Campus & Humanities ---
-  { id: 'fixed-powell', title: "Powell Library 📚", lat: 34.0716, lng: -118.4422, created_at: "", approved: true },
-  { id: 'fixed-royce', title: "Royce Hall 🏛️", lat: 34.0729, lng: -118.4422, created_at: "", approved: true },
-  { id: 'fixed-janss', title: "Janss Steps 🏃", lat: 34.0722, lng: -118.4432, created_at: "", approved: true },
-  { id: 'fixed-yrl', title: "Young Research Library (YRL) 📖", lat: 34.0749, lng: -118.4415, created_at: "", approved: true },
-  { id: 'fixed-sculpture', title: "Murphy Sculpture Garden 🌳", lat: 34.0747, lng: -118.4382, created_at: "", approved: true },
-  { id: 'fixed-broad', title: "Broad Art Center 🎨", lat: 34.0754, lng: -118.4398, created_at: "", approved: true },
+  { id: '00000000-0000-0000-0000-000000000001', title: "Powell Library 📚", lat: 34.0716, lng: -118.4422, created_at: "", approved: true },
+  { id: '00000000-0000-0000-0000-000000000002', title: "Royce Hall 🏛️", lat: 34.0729, lng: -118.4422, created_at: "", approved: true },
+  { id: '00000000-0000-0000-0000-000000000003', title: "Janss Steps 🏃", lat: 34.0722, lng: -118.4432, created_at: "", approved: true },
+  { id: '00000000-0000-0000-0000-000000000004', title: "Young Research Library (YRL) 📖", lat: 34.0749, lng: -118.4415, created_at: "", approved: true },
+  { id: '00000000-0000-0000-0000-000000000005', title: "Murphy Sculpture Garden 🌳", lat: 34.0747, lng: -118.4382, created_at: "", approved: true },
+  { id: '00000000-0000-0000-0000-000000000006', title: "Broad Art Center 🎨", lat: 34.0754, lng: -118.4398, created_at: "", approved: true },
   
   // --- South Campus & STEM ---
-  { id: 'fixed-boelter', title: "Boelter Hall 💻", lat: 34.0692, lng: -118.4431, created_at: "", approved: true },
-  { id: 'fixed-mathsci', title: "Math Sciences 🧮", lat: 34.0693, lng: -118.4442, created_at: "", approved: true },
-  { id: 'fixed-inverted', title: "Inverted Fountain ⛲", lat: 34.0688, lng: -118.4428, created_at: "", approved: true },
-  { id: 'fixed-botanical', title: "Botanical Garden 🌺", lat: 34.0662, lng: -118.4414, created_at: "", approved: true },
-  { id: 'fixed-cnsi', title: "CNSI Building 🔬", lat: 34.0684, lng: -118.4435, created_at: "", approved: true },
+  { id: '00000000-0000-0000-0000-000000000007', title: "Boelter Hall 💻", lat: 34.0692, lng: -118.4431, created_at: "", approved: true },
+  { id: '00000000-0000-0000-0000-000000000008', title: "Math Sciences 🧮", lat: 34.0693, lng: -118.4442, created_at: "", approved: true },
+  { id: '00000000-0000-0000-0000-000000000009', title: "Inverted Fountain ⛲", lat: 34.0688, lng: -118.4428, created_at: "", approved: true },
+  { id: '00000000-0000-0000-0000-000000000010', title: "Botanical Garden 🌺", lat: 34.0662, lng: -118.4414, created_at: "", approved: true },
+  { id: '00000000-0000-0000-0000-000000000011', title: "CNSI Building 🔬", lat: 34.0684, lng: -118.4435, created_at: "", approved: true },
 
   // --- Student Life & Central Campus ---
-  { id: 'fixed-bruinbear', title: "The Bruin Bear 🐻", lat: 34.0709, lng: -118.4446, created_at: "", approved: true },
-  { id: 'fixed-ackerman', title: "Ackerman Union 🍔", lat: 34.0704, lng: -118.4441, created_at: "", approved: true },
-  { id: 'fixed-kerckhoff', title: "Kerckhoff Coffee House ☕", lat: 34.0705, lng: -118.4433, created_at: "", approved: true },
-  { id: 'fixed-wooden', title: "John Wooden Center 🏋️", lat: 34.0711, lng: -118.4461, created_at: "", approved: true },
-  { id: 'fixed-pauley', title: "Pauley Pavilion 🏀", lat: 34.0699, lng: -118.4468, created_at: "", approved: true },
-  { id: 'fixed-drake', title: "Drake Stadium 🏃‍♂️", lat: 34.0722, lng: -118.4485, created_at: "", approved: true },
+  { id: '00000000-0000-0000-0000-000000000012', title: "The Bruin Bear 🐻", lat: 34.0709, lng: -118.4446, created_at: "", approved: true },
+  { id: '00000000-0000-0000-0000-000000000013', title: "Ackerman Union 🍔", lat: 34.0704, lng: -118.4441, created_at: "", approved: true },
+  { id: '00000000-0000-0000-0000-000000000014', title: "Kerckhoff Coffee House ☕", lat: 34.0705, lng: -118.4433, created_at: "", approved: true },
+  { id: '00000000-0000-0000-0000-000000000015', title: "John Wooden Center 🏋️", lat: 34.0711, lng: -118.4461, created_at: "", approved: true },
+  { id: '00000000-0000-0000-0000-000000000016', title: "Pauley Pavilion 🏀", lat: 34.0699, lng: -118.4468, created_at: "", approved: true },
+  { id: '00000000-0000-0000-0000-000000000017', title: "Drake Stadium 🏃‍♂️", lat: 34.0722, lng: -118.4485, created_at: "", approved: true },
 
   // --- The Hill (Housing & Dining) ---
-  { id: 'fixed-bplate', title: "Bruin Plate (B-Plate) 🥗", lat: 34.0719, lng: -118.4500, created_at: "", approved: true },
-  { id: 'fixed-epicuria', title: "Epicuria at Covel 🍝", lat: 34.0728, lng: -118.4501, created_at: "", approved: true },
-  { id: 'fixed-feast', title: "Feast at Rieber 🍣", lat: 34.0732, lng: -118.4514, created_at: "", approved: true },
-  { id: 'fixed-deneve', title: "De Neve Plaza 🛌", lat: 34.0707, lng: -118.4503, created_at: "", approved: true },
-  { id: 'fixed-study', title: "The Study at Hedrick 🥐", lat: 34.0739, lng: -118.4530, created_at: "", approved: true },
-  { id: 'fixed-sproul', title: "Sproul Plaza 🎓", lat: 34.0724, lng: -118.4497, created_at: "", approved: true },
-  { id: 'fixed-sunsetrec', title: "Sunset Canyon Rec Center 🏊", lat: 34.0743, lng: -118.4526, created_at: "", approved: true },
+  { id: '00000000-0000-0000-0000-000000000018', title: "Bruin Plate (B-Plate) 🥗", lat: 34.0719, lng: -118.4500, created_at: "", approved: true },
+  { id: '00000000-0000-0000-0000-000000000019', title: "Epicuria at Covel 🍝", lat: 34.0728, lng: -118.4501, created_at: "", approved: true },
+  { id: '00000000-0000-0000-0000-000000000020', title: "Feast at Rieber 🍣", lat: 34.0732, lng: -118.4514, created_at: "", approved: true },
+  { id: '00000000-0000-0000-0000-000000000021', title: "De Neve Plaza 🛌", lat: 34.0707, lng: -118.4503, created_at: "", approved: true },
+  { id: '00000000-0000-0000-0000-000000000022', title: "The Study at Hedrick 🥐", lat: 34.0739, lng: -118.4530, created_at: "", approved: true },
+  { id: '00000000-0000-0000-0000-000000000023', title: "Sproul Plaza 🎓", lat: 34.0724, lng: -118.4497, created_at: "", approved: true },
+  { id: '00000000-0000-0000-0000-000000000024', title: "Sunset Canyon Rec Center 🏊", lat: 34.0743, lng: -118.4526, created_at: "", approved: true },
 ];
 
 export default function MapPage() {
@@ -200,68 +200,117 @@ export default function MapPage() {
     });
   }
 
-  async function handleDrop() {
-    if (!user || !userPos || !dropFile || !dropTitle.trim()) return;
-    setDropping(true);
-    try {
+async function handleDrop() {
+  if (!user || !userPos || !dropFile || !dropTitle.trim()) return;
+  setDropping(true);
+  try {
+    let targetCapsule = null;
+    let minDistance = 40;
+
+    for (const cap of capsules) {
+      const dist = haversineMeters(userPos[0], userPos[1], cap.lat, cap.lng);
+      if (dist < minDistance) {
+        minDistance = dist;
+        targetCapsule = cap;
+      }
+    }
+
+    let finalCapsuleId;
+
+    if (targetCapsule) {
+      finalCapsuleId = targetCapsule.id;
+      // If hardcoded, ensure the DB has a record of it before we try to post to it
+      if (finalCapsuleId.startsWith('fixed-')) {
+        const { error: upsertErr } = await supabase.from("capsules").upsert({
+          id: targetCapsule.id,
+          title: targetCapsule.title,
+          lat: targetCapsule.lat,
+          lng: targetCapsule.lng,
+          author_id: user.id
+        }, { onConflict: 'id' });
+        if (upsertErr) throw upsertErr;
+      }
+    } else {
       const { data: cap, error: capErr } = await supabase
         .from("capsules")
         .insert({ title: dropTitle.trim(), lat: userPos[0], lng: userPos[1], author_id: user.id })
-        .select()
-        .single();
-      if (capErr || !cap) throw capErr;
-      const ext = dropFile.name.split(".").pop();
-      const path = `${user.id}/${cap.id}-${Date.now()}.${ext}`;
-      const { error: uploadErr } = await supabase.storage.from("capsule-media").upload(path, dropFile);
-      if (uploadErr) throw uploadErr;
-      await supabase.from("posts").insert({
-        capsule_id: cap.id,
-        caption: dropCaption.trim() || null,
+        .select().single();
+      if (capErr || !cap) throw capErr || new Error("Failed to create capsule");
+      finalCapsuleId = cap.id;
+      setCapsules((prev) => [cap as Capsule, ...prev]);
+    }
+
+    // Now that we are 100% sure finalCapsuleId exists in the DB, run the post logic
+    const ext = dropFile.name.split(".").pop();
+    const path = `${user.id}/${finalCapsuleId}-${Date.now()}.${ext}`;
+    const { error: uploadErr } = await supabase.storage.from("capsule-media").upload(path, dropFile);
+    if (uploadErr) throw uploadErr;
+    
+    const { error: postErr } = await supabase.from("posts").insert({
+      capsule_id: finalCapsuleId,
+      caption: dropCaption.trim() || null,
+      media_path: path,
+      author_id: user.id,
+    });
+    if (postErr) throw postErr;
+
+    setShowDropPanel(false);
+    setDropTitle("");
+    setDropCaption("");
+    setDropFile(null);
+    if (targetCapsule) alert(`📍 Added to: ${targetCapsule.title}`);
+  } catch (e: any) {
+    console.error("Drop Error:", e);
+    alert(`Error: ${e.message || "Failed to drop capsule"}`);
+  }
+  setDropping(false);
+}
+
+async function handleAddPost() {
+  if (!user || !selectedCapsule || !addFile) return;
+  setAddingPost(true);
+  try {
+    if (selectedCapsule.id.startsWith('fixed-')) {
+      const { error: upsertErr } = await supabase.from("capsules").upsert({
+        id: selectedCapsule.id,
+        title: selectedCapsule.title,
+        lat: selectedCapsule.lat,
+        lng: selectedCapsule.lng,
+        author_id: user.id
+      }, { onConflict: 'id' });
+      if (upsertErr) throw upsertErr;
+    }
+
+    const ext = addFile.name.split(".").pop();
+    const path = `${user.id}/${selectedCapsule.id}-${Date.now()}.${ext}`;
+    const { error: uploadErr } = await supabase.storage.from("capsule-media").upload(path, addFile);
+    if (uploadErr) throw uploadErr;
+
+    const { data: post, error: postErr } = await supabase
+      .from("posts")
+      .insert({
+        capsule_id: selectedCapsule.id,
+        caption: addCaption.trim() || null,
         media_path: path,
         author_id: user.id,
-      });
-      setCapsules((prev) => [cap as Capsule, ...prev]);
-      setShowDropPanel(false);
-      setDropTitle("");
-      setDropCaption("");
-      setDropFile(null);
-    } catch (e) {
-      console.error(e);
-      alert("Check Supabase RLS Policies for capsules and storage.");
-    }
-    setDropping(false);
-  }
+      })
+      .select().single();
 
-  async function handleAddPost() {
-    if (!user || !selectedCapsule || !addFile) return;
-    setAddingPost(true);
-    try {
-      const ext = addFile.name.split(".").pop();
-      const path = `${user.id}/${selectedCapsule.id}-${Date.now()}.${ext}`;
-      const { error: uploadErr } = await supabase.storage.from("capsule-media").upload(path, addFile);
-      if (uploadErr) throw uploadErr;
-      const { data: post } = await supabase
-        .from("posts")
-        .insert({
-          capsule_id: selectedCapsule.id,
-          caption: addCaption.trim() || null,
-          media_path: path,
-          author_id: user.id,
-        })
-        .select()
-        .single();
-      if (post) {
-        const { data } = supabase.storage.from("capsule-media").getPublicUrl(path);
-        setCapsulePosts((prev) => [{ ...(post as Post), media_url: data.publicUrl }, ...prev]);
-      }
-      setShowAddPost(false);
-      setAddCaption("");
-      setAddFile(null);
-    } catch (e) {
-      console.error(e);
+    if (postErr) throw postErr;
+
+    if (post) {
+      const { data } = supabase.storage.from("capsule-media").getPublicUrl(path);
+      setCapsulePosts((prev) => [{ ...(post as Post), media_url: data.publicUrl }, ...prev]);
     }
-    setAddingPost(false);
+    setShowAddPost(false);
+    setAddCaption("");
+    setAddFile(null);
+  } catch (e: any) {
+    console.error("Add Post Error:", e);
+    alert(`Error: ${e.message || "Failed to add photo"}`);
   }
+  setAddingPost(false);
+}
 
   return (
     <div style={{ width: "100vw", height: "100vh", position: "relative", fontFamily: "'DM Sans', sans-serif", background: "#0a0a0a" }}>
@@ -420,7 +469,9 @@ export default function MapPage() {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
             <div>
               <h2 style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 18, fontWeight: 700 }}>{selectedCapsule.title}</h2>
-              <p style={{ fontSize: 11, color: "#555", marginTop: 2 }}>{new Date(selectedCapsule.created_at).toLocaleDateString()}</p>
+<p style={{ fontSize: 11, color: "#555", marginTop: 2 }}>
+  {selectedCapsule.created_at ? new Date(selectedCapsule.created_at).toLocaleDateString() : 'Iconic Location'}
+</p>
             </div>
 <div style={{ display: "flex", gap: 8 }}>
               {/* 👇 1. THIS IS STEP 2: The new ownership condition 👇 */}
