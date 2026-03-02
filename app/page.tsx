@@ -408,7 +408,7 @@ export default function MapPage() {
         </div>
       )}
 
-      {/* SELECTED CAPSULE PANEL */}
+      {/* Selected Capsule Panel */}
       {selectedCapsule && (
         <div className="panel" style={{
           position: "absolute", bottom: 0, left: 0, right: 0, maxHeight: "55vh",
@@ -420,19 +420,21 @@ export default function MapPage() {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
             <div>
               <h2 style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 18, fontWeight: 700 }}>{selectedCapsule.title}</h2>
-              <p style={{ fontSize: 11, color: "#555", marginTop: 2 }}>
-                {selectedCapsule.created_at ? new Date(selectedCapsule.created_at).toLocaleDateString() : 'Iconic Location'}
-              </p>
+              <p style={{ fontSize: 11, color: "#555", marginTop: 2 }}>{new Date(selectedCapsule.created_at).toLocaleDateString()}</p>
             </div>
-            <div style={{ display: "flex", gap: 8 }}>
+<div style={{ display: "flex", gap: 8 }}>
+              {/* 👇 1. THIS IS STEP 2: The new ownership condition 👇 */}
               {!selectedCapsule.id.startsWith('fixed-') && user?.id === selectedCapsule.author_id && (
                 <button onClick={() => handleDeleteCapsule(selectedCapsule.id)} style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)", color: "#ef4444", padding: "6px 12px", borderRadius: 10, fontSize: 12, cursor: "pointer" }}>🗑️ Delete</button>
               )}
+              
+              {/* 👇 2. ADD PHOTO BUTTON (Restored) 👇 */}
               <button onClick={() => setShowAddPost(!showAddPost)} style={{ ...btnStyle, padding: "6px 14px", fontSize: 12, width: 'auto' }}>+ Add photo</button>
+              
               <button onClick={() => setSelectedCapsule(null)} style={{ background: "none", border: "none", color: "#555", fontSize: 20, cursor: "pointer" }}>✕</button>
             </div>
           </div>
-          
+          {/* ... (Post rendering logic remains identical) */}
           {showAddPost && (
             <div style={{ background: "rgba(255,255,255,0.04)", borderRadius: 12, padding: 14, marginBottom: 16, border: "1px solid rgba(255,255,255,0.07)" }}>
               <input placeholder="Caption" value={addCaption} onChange={(e) => setAddCaption(e.target.value)} style={inputStyle} />
@@ -444,32 +446,30 @@ export default function MapPage() {
               </div>
             </div>
           )}
-          
           {loadingPosts ? <div style={{ textAlign: "center", color: "#555", padding: "24px 0" }}>Loading memories...</div> : capsulePosts.length === 0 ? <div style={{ textAlign: "center", color: "#444", padding: "24px 0" }}>No posts yet.</div> : (
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              {capsulePosts.map((post) => (
-                <div key={post.id} style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, overflow: "hidden" }}>
-                  {post.media_url && (
-                    <img src={post.media_url} alt={post.caption ?? ""} style={{ width: "100%", maxHeight: 260, objectFit: "cover", display: "block" }} />
-                  )}
-                  <div style={{ padding: "12px 14px" }}>
-                    <p style={{ fontSize: 11, color: "#555", marginBottom: 6 }}>
-                      🕰 {new Date(post.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                      {" · "}
-                      {new Date(post.created_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
-                    </p>
-                    {post.caption && (
-                      <p style={{ fontSize: 13, color: "#ccc", lineHeight: 1.5 }}>{post.caption}</p>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
+  {capsulePosts.map((post) => (
+    <div key={post.id} style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, overflow: "hidden" }}>
+      {post.media_url && (
+        <img src={post.media_url} alt={post.caption ?? ""} style={{ width: "100%", maxHeight: 260, objectFit: "cover", display: "block" }} />
+      )}
+      <div style={{ padding: "12px 14px" }}>
+        <p style={{ fontSize: 11, color: "#555", marginBottom: 6 }}>
+          🕰 {new Date(post.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+          {" · "}
+          {new Date(post.created_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
+        </p>
+        {post.caption && (
+          <p style={{ fontSize: 13, color: "#ccc", lineHeight: 1.5 }}>{post.caption}</p>
+        )}
+      </div>
+    </div>
+  ))}
+</div>
           )}
         </div>
       )}
-
-      {/* Auth Modal */}
+      {/* ... (Auth Modal and Location Warning UI remain identical) */}
       {showAuthModal && (
         <div onClick={() => setShowAuthModal(false)} style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center" }}>
           <div className="panel" onClick={(e) => e.stopPropagation()} style={{ background: "rgba(15,15,15,0.98)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 20, padding: 32, maxWidth: 320, width: "90%", textAlign: "center", color: "#fff" }}>
