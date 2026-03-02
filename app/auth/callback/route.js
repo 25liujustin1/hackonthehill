@@ -10,16 +10,12 @@ export async function GET(request) {
     const { data, error } = await supabase.auth.exchangeCodeForSession(code)
 
     if (!error && data.user) {
-      const email = data.user.email;
-      
-      // Check if email ends with a UCLA domain
-      const isUCLA = email.endsWith('@ucla.edu') || email.endsWith('@g.ucla.edu');
+      const email = data.user.email
+      const isUCLA = email.endsWith('@ucla.edu') || email.endsWith('@g.ucla.edu')
 
       if (!isUCLA) {
-        // If not UCLA, sign them back out immediately
-        await supabase.auth.signOut();
-        // Redirect to a specialized error page or the login page with a message
-        return NextResponse.redirect(`${origin}/login?error=Only UCLA emails are allowed`);
+        await supabase.auth.signOut()
+        return NextResponse.redirect(`${origin}/login?error=Only UCLA emails are allowed`)
       }
     }
   }
