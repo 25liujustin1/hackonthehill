@@ -237,64 +237,85 @@ useEffect(() => {
     if (error) throw error;
   }
 
-  async function handleDrop() {
-    if (!user || !userPos || !dropFile || !dropTitle.trim()) return;
-    setDropping(true);
-    try {
-      let targetCapsule: Capsule | null = null;
-      let minDistance = UNLOCK_RADIUS_M; // ✅ Fixed: use same constant as unlock radius
 
-      for (const cap of capsules) {
-        const dist = haversineMeters(userPos[0], userPos[1], cap.lat, cap.lng);
-        if (dist < minDistance) {
-          minDistance = dist;
-          targetCapsule = cap;
-        }
-      }
 
-      let finalCapsuleId: string;
-
-      if (targetCapsule) {
-        finalCapsuleId = targetCapsule.id;
-        // ✅ Fixed: check for the actual ID format used by hardcoded landmarks
-        if (isFixedCapsule(finalCapsuleId)) {
-          await upsertFixedCapsule(targetCapsule);
-        }
-      } else {
-        const { data: cap, error: capErr } = await supabase
-          .from("capsules")
-          .insert({ title: dropTitle.trim(), lat: userPos[0], lng: userPos[1], author_id: user.id })
-          .select().single();
-        if (capErr || !cap) throw capErr || new Error("Failed to create capsule");
-        finalCapsuleId = cap.id;
-        setCapsules((prev) => [cap as Capsule, ...prev]);
-      }
-
-      const ext = dropFile.name.split(".").pop();
-      const path = `${user.id}/${finalCapsuleId}-${Date.now()}.${ext}`;
-      const { error: uploadErr } = await supabase.storage.from("capsule-media").upload(path, dropFile);
-      if (uploadErr) throw uploadErr;
-
-      const { error: postErr } = await supabase.from("posts").insert({
-        capsule_id: finalCapsuleId,
+async function handleDrop() {
+  if (!user || !userPos || !dropFile || !dropTitle.trim()) return;
+  setDropping(true);
+  try {
+    // Moderation check
+    const modRes = await fetch("/api/moderate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: dropTitle.trim(),
         caption: dropCaption.trim() || null,
-        media_path: path,
-        author_id: user.id,
-      });
-      if (postErr) throw postErr;
-
-      setShowDropPanel(false);
-      setDropTitle("");
-      setDropCaption("");
-      setDropFile(null);
-      if (targetCapsule) alert(`📍 Added to: ${targetCapsule.title}`);
-    } catch (e: any) {
-      console.error("Drop Error:", e);
-      alert(`Error: ${e.message || "Failed to drop capsule"}`);
+        imageUrl: null
+      })
+    });
+    const { appropriate } = await modRes.json();
+    if (!appropriate) {
+      alert("⚠️ Your capsule was flagged as inappropriate and could not be posted.");
+      setDropping(false);
+      return;
     }
-    setDropping(false);
-  }
 
+    let targetCapsule: Capsule | null = null;
+    let minDistance = UNLOCK_RADIUS_M;
+
+    for (const cap of capsules) {
+      const dist = haversineMeters(userPos[0], userPos[1], cap.lat, cap.lng);
+      if (dist < minDistance) {
+        minDistance = dist;
+        targetCapsule = cap;
+      }
+    }
+
+    let finalCapsuleId: string;
+
+    if (targetCapsule) {
+      finalCapsuleId = targetCapsule.id;
+      if (isFixedCapsule(finalCapsuleId)) {
+        await upsertFixedCapsule(targetCapsule);
+      }
+    } else {
+      const { data: cap, error: capErr } = await supabase
+        .from("capsules")
+        .insert({ title: dropTitle.trim(), lat: userPos[0], lng: userPos[1], author_id: user.id })
+        .select().single();
+      if (capErr || !cap) throw capErr || new Error("Failed to create capsule");
+      finalCapsuleId = cap.id;
+      setCapsules((prev) => [cap as Capsule, ...prev]);
+    }
+
+    const ext = dropFile.name.split(".").pop();
+    const path = `${user.id}/${finalCapsuleId}-${Date.now()}.${ext}`;
+    const { error: uploadErr } = await supabase.storage.from("capsule-media").upload(path, dropFile);
+    if (uploadErr) throw uploadErr;
+
+    const { error: postErr } = await supabase.from("posts").insert({
+      capsule_id: finalCapsuleId,
+      caption: dropCaption.trim() || null,
+      media_path: path,
+      author_id: user.id,
+    });
+    if (postErr) throw postErr;
+
+    setShowDropPanel(false);
+    setDropTitle("");
+    setDropCaption("");
+    setDropFile(null);
+    if (targetCapsule) alert(`📍 Added to: ${targetCapsule.title}`);
+  } catch (e: any) {
+    console.error("Drop Error:", e);
+    alert(`Error: ${e.message || "Failed to drop capsule"}`);
+  }
+  setDropping(false);
+}
+
+
+
+  
   async function handleAddPost() {
     if (!user || !selectedCapsule || !addFile) return;
     setAddingPost(true);
