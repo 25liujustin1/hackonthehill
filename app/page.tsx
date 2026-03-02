@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Map, Marker, Overlay } from "pigeon-maps";
+import { Map, Overlay } from "pigeon-maps";
 import { createClient } from "@/lib/supabaseClient";
 
 interface Capsule {
@@ -11,15 +11,7 @@ interface Capsule {
   lng: number;
   created_at: string;
   approved?: boolean;
-  author_id?: string; // 👈 Add this line!
-}
-
-interface Capsule {
-  id: string;
-  title: string;
-  lat: number;
-  lng: number;
-  created_at: string;
+  author_id?: string;
 }
 
 interface Post {
@@ -44,6 +36,40 @@ function haversineMeters(lat1: number, lng1: number, lat2: number, lng2: number)
 }
 
 const UNLOCK_RADIUS_M = 50; // Standard scavenger hunt radius
+
+const FIXED_CAPSULES: Capsule[] = [
+  // --- North Campus & Humanities ---
+  { id: 'fixed-powell', title: "Powell Library 📚", lat: 34.0716, lng: -118.4422, created_at: "", approved: true },
+  { id: 'fixed-royce', title: "Royce Hall 🏛️", lat: 34.0729, lng: -118.4422, created_at: "", approved: true },
+  { id: 'fixed-janss', title: "Janss Steps 🏃", lat: 34.0722, lng: -118.4432, created_at: "", approved: true },
+  { id: 'fixed-yrl', title: "Young Research Library (YRL) 📖", lat: 34.0749, lng: -118.4415, created_at: "", approved: true },
+  { id: 'fixed-sculpture', title: "Murphy Sculpture Garden 🌳", lat: 34.0747, lng: -118.4382, created_at: "", approved: true },
+  { id: 'fixed-broad', title: "Broad Art Center 🎨", lat: 34.0754, lng: -118.4398, created_at: "", approved: true },
+  
+  // --- South Campus & STEM ---
+  { id: 'fixed-boelter', title: "Boelter Hall 💻", lat: 34.0692, lng: -118.4431, created_at: "", approved: true },
+  { id: 'fixed-mathsci', title: "Math Sciences 🧮", lat: 34.0693, lng: -118.4442, created_at: "", approved: true },
+  { id: 'fixed-inverted', title: "Inverted Fountain ⛲", lat: 34.0688, lng: -118.4428, created_at: "", approved: true },
+  { id: 'fixed-botanical', title: "Botanical Garden 🌺", lat: 34.0662, lng: -118.4414, created_at: "", approved: true },
+  { id: 'fixed-cnsi', title: "CNSI Building 🔬", lat: 34.0684, lng: -118.4435, created_at: "", approved: true },
+
+  // --- Student Life & Central Campus ---
+  { id: 'fixed-bruinbear', title: "The Bruin Bear 🐻", lat: 34.0709, lng: -118.4446, created_at: "", approved: true },
+  { id: 'fixed-ackerman', title: "Ackerman Union 🍔", lat: 34.0704, lng: -118.4441, created_at: "", approved: true },
+  { id: 'fixed-kerckhoff', title: "Kerckhoff Coffee House ☕", lat: 34.0705, lng: -118.4433, created_at: "", approved: true },
+  { id: 'fixed-wooden', title: "John Wooden Center 🏋️", lat: 34.0711, lng: -118.4461, created_at: "", approved: true },
+  { id: 'fixed-pauley', title: "Pauley Pavilion 🏀", lat: 34.0699, lng: -118.4468, created_at: "", approved: true },
+  { id: 'fixed-drake', title: "Drake Stadium 🏃‍♂️", lat: 34.0722, lng: -118.4485, created_at: "", approved: true },
+
+  // --- The Hill (Housing & Dining) ---
+  { id: 'fixed-bplate', title: "Bruin Plate (B-Plate) 🥗", lat: 34.0719, lng: -118.4500, created_at: "", approved: true },
+  { id: 'fixed-epicuria', title: "Epicuria at Covel 🍝", lat: 34.0728, lng: -118.4501, created_at: "", approved: true },
+  { id: 'fixed-feast', title: "Feast at Rieber 🍣", lat: 34.0732, lng: -118.4514, created_at: "", approved: true },
+  { id: 'fixed-deneve', title: "De Neve Plaza 🛌", lat: 34.0707, lng: -118.4503, created_at: "", approved: true },
+  { id: 'fixed-study', title: "The Study at Hedrick 🥐", lat: 34.0739, lng: -118.4530, created_at: "", approved: true },
+  { id: 'fixed-sproul', title: "Sproul Plaza 🎓", lat: 34.0724, lng: -118.4497, created_at: "", approved: true },
+  { id: 'fixed-sunsetrec', title: "Sunset Canyon Rec Center 🏊", lat: 34.0743, lng: -118.4526, created_at: "", approved: true },
+];
 
 export default function MapPage() {
   const supabase = createClient();
@@ -95,7 +121,7 @@ export default function MapPage() {
     };
   }, []);
 
-  // 3. CAPSULE FETCHING + B-PLATE INJECTION
+  // 3. CAPSULE FETCHING + UCLA LANDMARKS INJECTION
   useEffect(() => {
     if (!user) return;
     supabase
@@ -103,15 +129,8 @@ export default function MapPage() {
       .select("*")
       .order("created_at", { ascending: false })
       .then(({ data }) => {
-        const bPlate: Capsule = { 
-          id: 'fixed-bplate-capsule', 
-          title: "Bruin Plate (B-Plate) 🥗", 
-          lat: 34.0719, 
-          lng: -118.4500, 
-          created_at: new Date().toISOString() 
-        };
-        if (data) setCapsules([bPlate, ...data]);
-        else setCapsules([bPlate]);
+        if (data) setCapsules([...FIXED_CAPSULES, ...data]);
+        else setCapsules([...FIXED_CAPSULES]);
       });
   }, [user]);
 
@@ -121,7 +140,7 @@ export default function MapPage() {
   }
 
   async function handleDeleteCapsule(capsuleId: string) {
-    if (!user || capsuleId === 'fixed-bplate-capsule') return;
+    if (!user || capsuleId.startsWith('fixed-')) return;
     if (!confirm("Are you sure you want to delete this capsule?")) return;
     try {
       const { error } = await supabase.from("capsules").delete().eq("id", capsuleId);
@@ -134,7 +153,6 @@ export default function MapPage() {
     }
   }
 
-  // ... (signIn, signOut, openCapsule, handleDrop, handleAddPost logic remains identical)
   async function requireAuth(cb: () => void) {
     if (!user) { setShowAuthModal(true); return; }
     cb();
@@ -261,21 +279,18 @@ export default function MapPage() {
         .panel { animation: fadeUp 0.2s ease; }
       `}</style>
 
-<Map
-  center={center}
-  zoom={zoom}
-  onBoundsChanged={({ center, zoom }) => { setCenter(center); setZoom(zoom); }}
-  // Corrected TypeScript handling for event.target
-  onClick={({ event }) => { 
-    const target = event.target as HTMLElement; 
-    
-    // Check if the click was on the map canvas or the attribution block
-    if (target.tagName === 'CANVAS' || (target.className && typeof target.className === 'string' && target.className.includes('pigeon-click-block'))) {
-      setSelectedCapsule(null); 
-      setShowDropPanel(false); 
-    }
-  }}
->
+      <Map
+        center={center}
+        zoom={zoom}
+        onBoundsChanged={({ center, zoom }) => { setCenter(center); setZoom(zoom); }}
+        onClick={({ event }) => { 
+          const target = event.target as HTMLElement; 
+          if (target.tagName === 'CANVAS' || (target.className && typeof target.className === 'string' && target.className.includes('pigeon-click-block'))) {
+            setSelectedCapsule(null); 
+            setShowDropPanel(false); 
+          }
+        }}
+      >
         {userPos && (
           <Overlay anchor={userPos} offset={[10, 10]}>
             <div style={{ position: "relative", width: 20, height: 20 }}>
@@ -313,7 +328,7 @@ export default function MapPage() {
                   {distToCap !== null && (
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                       <span style={{ fontSize: 10, color: unlocked ? "#4ade80" : "#fbbf24" }}>{distToCap}m away</span>
-                      {!unlocked && <span style={{ fontSize: 9, color: "#666", fontStyle: 'italic' }}>Reach 30m to unlock</span>}
+                      {!unlocked && <span style={{ fontSize: 9, color: "#666", fontStyle: 'italic' }}>Reach 50m to unlock</span>}
                     </div>
                   )}
                 </div>
@@ -344,56 +359,56 @@ export default function MapPage() {
       </div>
 
       {/* Control Buttons */}
-{user && userPos && (
-  <button 
-    className="capsule-btn" 
-    onClick={(e) => {
-      e.stopPropagation(); // FIX: Prevent the map from closing the panel immediately
-      setShowDropPanel(true); 
-      setSelectedCapsule(null); 
-    }} 
-    style={{ 
-      position: "absolute", bottom: 32, right: 24, 
-      width: 56, height: 56, borderRadius: "50%", 
-      background: "linear-gradient(135deg,#f59e0b,#ef4444)", 
-      border: "none", color: "#fff", fontSize: 24, cursor: "pointer", 
-      boxShadow: "0 4px 24px rgba(245,158,11,0.4)", 
-      zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center" 
-    }}
-  >+</button>
-)}
+      {user && userPos && (
+        <button 
+          className="capsule-btn" 
+          onClick={(e) => {
+            e.stopPropagation();
+            setShowDropPanel(true); 
+            setSelectedCapsule(null); 
+          }} 
+          style={{ 
+            position: "absolute", bottom: 32, right: 24, 
+            width: 56, height: 56, borderRadius: "50%", 
+            background: "linear-gradient(135deg,#f59e0b,#ef4444)", 
+            border: "none", color: "#fff", fontSize: 24, cursor: "pointer", 
+            boxShadow: "0 4px 24px rgba(245,158,11,0.4)", 
+            zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center" 
+          }}
+        >+</button>
+      )}
 
-{/* 1. ADD THE DROP PANEL UI */}
-{showDropPanel && (
-  <div className="panel" style={{
-    position: "absolute", bottom: 100, right: 24, left: 24,
-    maxWidth: 380, margin: "0 auto",
-    background: "rgba(15,15,15,0.95)", backdropFilter: "blur(16px)",
-    border: "1px solid rgba(255,255,255,0.1)", borderRadius: 16,
-    padding: 20, zIndex: 200, color: "#fff"
-  }}>
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-      <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 15 }}>Drop a Capsule 📦</span>
-      <button onClick={() => setShowDropPanel(false)} style={{ background: "none", border: "none", color: "#666", fontSize: 18, cursor: "pointer" }}>✕</button>
-    </div>
-    <input placeholder="Capsule title (e.g. Powell Library)" value={dropTitle} onChange={(e) => setDropTitle(e.target.value)} style={inputStyle} />
-    <input placeholder="Caption (optional)" value={dropCaption} onChange={(e) => setDropCaption(e.target.value)} style={{ ...inputStyle, marginTop: 10 }} />
-    <div onClick={() => fileInputRef.current?.click()} style={{
-      marginTop: 10, border: "1.5px dashed rgba(255,255,255,0.2)",
-      borderRadius: 10, padding: "14px", textAlign: "center",
-      cursor: "pointer", color: "#777", fontSize: 13,
-      background: dropFile ? "rgba(245,158,11,0.06)" : "transparent"
-    }}>
-      {dropFile ? `📎 ${dropFile.name}` : "Tap to attach a photo"}
-    </div>
-    <input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => setDropFile(e.target.files?.[0] ?? null)} />
-    <button onClick={handleDrop} disabled={dropping || !dropTitle.trim() || !dropFile} style={{ ...btnStyle, marginTop: 14, opacity: (!dropTitle.trim() || !dropFile || dropping) ? 0.4 : 1 }}>
-      {dropping ? "Dropping..." : "Drop it here 📍"}
-    </button>
-  </div>
-)}
+      {/* DROP PANEL UI */}
+      {showDropPanel && (
+        <div className="panel" style={{
+          position: "absolute", bottom: 100, right: 24, left: 24,
+          maxWidth: 380, margin: "0 auto",
+          background: "rgba(15,15,15,0.95)", backdropFilter: "blur(16px)",
+          border: "1px solid rgba(255,255,255,0.1)", borderRadius: 16,
+          padding: 20, zIndex: 200, color: "#fff"
+        }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+            <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 15 }}>Drop a Capsule 📦</span>
+            <button onClick={() => setShowDropPanel(false)} style={{ background: "none", border: "none", color: "#666", fontSize: 18, cursor: "pointer" }}>✕</button>
+          </div>
+          <input placeholder="Capsule title (e.g. Powell Library)" value={dropTitle} onChange={(e) => setDropTitle(e.target.value)} style={inputStyle} />
+          <input placeholder="Caption (optional)" value={dropCaption} onChange={(e) => setDropCaption(e.target.value)} style={{ ...inputStyle, marginTop: 10 }} />
+          <div onClick={() => fileInputRef.current?.click()} style={{
+            marginTop: 10, border: "1.5px dashed rgba(255,255,255,0.2)",
+            borderRadius: 10, padding: "14px", textAlign: "center",
+            cursor: "pointer", color: "#777", fontSize: 13,
+            background: dropFile ? "rgba(245,158,11,0.06)" : "transparent"
+          }}>
+            {dropFile ? `📎 ${dropFile.name}` : "Tap to attach a photo"}
+          </div>
+          <input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => setDropFile(e.target.files?.[0] ?? null)} />
+          <button onClick={handleDrop} disabled={dropping || !dropTitle.trim() || !dropFile} style={{ ...btnStyle, marginTop: 14, opacity: (!dropTitle.trim() || !dropFile || dropping) ? 0.4 : 1 }}>
+            {dropping ? "Dropping..." : "Drop it here 📍"}
+          </button>
+        </div>
+      )}
 
-      {/* Selected Capsule Panel */}
+      {/* SELECTED CAPSULE PANEL */}
       {selectedCapsule && (
         <div className="panel" style={{
           position: "absolute", bottom: 0, left: 0, right: 0, maxHeight: "55vh",
@@ -405,21 +420,19 @@ export default function MapPage() {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
             <div>
               <h2 style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 18, fontWeight: 700 }}>{selectedCapsule.title}</h2>
-              <p style={{ fontSize: 11, color: "#555", marginTop: 2 }}>{new Date(selectedCapsule.created_at).toLocaleDateString()}</p>
+              <p style={{ fontSize: 11, color: "#555", marginTop: 2 }}>
+                {selectedCapsule.created_at ? new Date(selectedCapsule.created_at).toLocaleDateString() : 'Iconic Location'}
+              </p>
             </div>
-<div style={{ display: "flex", gap: 8 }}>
-              {/* 👇 1. THIS IS STEP 2: The new ownership condition 👇 */}
+            <div style={{ display: "flex", gap: 8 }}>
               {!selectedCapsule.id.startsWith('fixed-') && user?.id === selectedCapsule.author_id && (
                 <button onClick={() => handleDeleteCapsule(selectedCapsule.id)} style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)", color: "#ef4444", padding: "6px 12px", borderRadius: 10, fontSize: 12, cursor: "pointer" }}>🗑️ Delete</button>
               )}
-              
-              {/* 👇 2. ADD PHOTO BUTTON (Restored) 👇 */}
               <button onClick={() => setShowAddPost(!showAddPost)} style={{ ...btnStyle, padding: "6px 14px", fontSize: 12, width: 'auto' }}>+ Add photo</button>
-              
               <button onClick={() => setSelectedCapsule(null)} style={{ background: "none", border: "none", color: "#555", fontSize: 20, cursor: "pointer" }}>✕</button>
             </div>
           </div>
-          {/* ... (Post rendering logic remains identical) */}
+          
           {showAddPost && (
             <div style={{ background: "rgba(255,255,255,0.04)", borderRadius: 12, padding: 14, marginBottom: 16, border: "1px solid rgba(255,255,255,0.07)" }}>
               <input placeholder="Caption" value={addCaption} onChange={(e) => setAddCaption(e.target.value)} style={inputStyle} />
@@ -431,30 +444,32 @@ export default function MapPage() {
               </div>
             </div>
           )}
+          
           {loadingPosts ? <div style={{ textAlign: "center", color: "#555", padding: "24px 0" }}>Loading memories...</div> : capsulePosts.length === 0 ? <div style={{ textAlign: "center", color: "#444", padding: "24px 0" }}>No posts yet.</div> : (
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-  {capsulePosts.map((post) => (
-    <div key={post.id} style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, overflow: "hidden" }}>
-      {post.media_url && (
-        <img src={post.media_url} alt={post.caption ?? ""} style={{ width: "100%", maxHeight: 260, objectFit: "cover", display: "block" }} />
-      )}
-      <div style={{ padding: "12px 14px" }}>
-        <p style={{ fontSize: 11, color: "#555", marginBottom: 6 }}>
-          🕰 {new Date(post.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-          {" · "}
-          {new Date(post.created_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
-        </p>
-        {post.caption && (
-          <p style={{ fontSize: 13, color: "#ccc", lineHeight: 1.5 }}>{post.caption}</p>
-        )}
-      </div>
-    </div>
-  ))}
-</div>
+              {capsulePosts.map((post) => (
+                <div key={post.id} style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, overflow: "hidden" }}>
+                  {post.media_url && (
+                    <img src={post.media_url} alt={post.caption ?? ""} style={{ width: "100%", maxHeight: 260, objectFit: "cover", display: "block" }} />
+                  )}
+                  <div style={{ padding: "12px 14px" }}>
+                    <p style={{ fontSize: 11, color: "#555", marginBottom: 6 }}>
+                      🕰 {new Date(post.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                      {" · "}
+                      {new Date(post.created_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
+                    </p>
+                    {post.caption && (
+                      <p style={{ fontSize: 13, color: "#ccc", lineHeight: 1.5 }}>{post.caption}</p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
         </div>
       )}
-      {/* ... (Auth Modal and Location Warning UI remain identical) */}
+
+      {/* Auth Modal */}
       {showAuthModal && (
         <div onClick={() => setShowAuthModal(false)} style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center" }}>
           <div className="panel" onClick={(e) => e.stopPropagation()} style={{ background: "rgba(15,15,15,0.98)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 20, padding: 32, maxWidth: 320, width: "90%", textAlign: "center", color: "#fff" }}>
@@ -465,6 +480,7 @@ export default function MapPage() {
           </div>
         </div>
       )}
+
       {user && !userPos && (
         <div style={{ position: "absolute", bottom: 24, left: "50%", transform: "translateX(-50%)", background: "rgba(15,15,15,0.9)", backdropFilter: "blur(8px)", border: "1px solid rgba(255,165,0,0.3)", color: "#f59e0b", fontSize: 12, padding: "8px 16px", borderRadius: 999, zIndex: 100, whiteSpace: "nowrap" }}>⚠️ Enable location to unlock capsules</div>
       )}
