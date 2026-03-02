@@ -35,7 +35,7 @@ function haversineMeters(lat1: number, lng1: number, lat2: number, lng2: number)
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-const UNLOCK_RADIUS_M = 50;
+const UNLOCK_RADIUS_M = 30;
 
 function isFixedCapsule(id: string): boolean {
   return id.startsWith('00000000-0000-0000-0000-');
