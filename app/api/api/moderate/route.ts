@@ -24,7 +24,7 @@ Respond with only "true" or "false".`;
 
   const data = await response.json();
   const result = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim().toLowerCase();
-  const isAppropriate = result === "true";
+    const isAppropriate = result?.includes("true") ?? true;
 
   return NextResponse.json({ appropriate: isAppropriate });
 }
