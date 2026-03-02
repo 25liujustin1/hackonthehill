@@ -383,62 +383,94 @@ export default function MapPage() {
   </div>
 )}
 
-      {/* Selected Capsule Panel */}
-      {selectedCapsule && (
-        <div className="panel" style={{
-          position: "absolute", bottom: 0, left: 0, right: 0, maxHeight: "55vh",
-          background: "rgba(12,12,12,0.97)", backdropFilter: "blur(16px)",
-          border: "1px solid rgba(255,255,255,0.08)", borderTopLeftRadius: 20, borderTopRightRadius: 20,
-          padding: "20px 20px 32px", zIndex: 200, color: "#fff", overflowY: "auto"
-        }}>
-          <div style={{ width: 40, height: 4, borderRadius: 2, background: "#333", margin: "0 auto 16px" }} />
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
-            <div>
-              <h2 style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 18, fontWeight: 700 }}>{selectedCapsule.title}</h2>
-              <p style={{ fontSize: 11, color: "#555", marginTop: 2 }}>{new Date(selectedCapsule.created_at).toLocaleDateString()}</p>
-            </div>
-            <div style={{ display: "flex", gap: 8 }}>
-              {selectedCapsule.id !== 'fixed-bplate-capsule' && (
-                <button onClick={() => handleDeleteCapsule(selectedCapsule.id)} style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)", color: "#ef4444", padding: "6px 12px", borderRadius: 10, fontSize: 12, cursor: "pointer" }}>🗑️ Delete</button>
-              )}
-              <button onClick={() => setSelectedCapsule(null)} style={{ background: "none", border: "none", color: "#555", fontSize: 20, cursor: "pointer" }}>✕</button>
-            </div>
-          </div>
-          {/* ... (Post rendering logic remains identical) */}
-          {showAddPost && (
-            <div style={{ background: "rgba(255,255,255,0.04)", borderRadius: 12, padding: 14, marginBottom: 16, border: "1px solid rgba(255,255,255,0.07)" }}>
-              <input placeholder="Caption" value={addCaption} onChange={(e) => setAddCaption(e.target.value)} style={inputStyle} />
-              <div onClick={() => addFileInputRef.current?.click()} style={{ marginTop: 10, border: "1.5px dashed rgba(255,255,255,0.15)", borderRadius: 10, padding: "12px", textAlign: "center", cursor: "pointer", color: "#666", fontSize: 12, background: addFile ? "rgba(245,158,11,0.05)" : "transparent" }}>{addFile ? `📎 ${addFile.name}` : "Attach photo"}</div>
-              <input ref={addFileInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => setAddFile(e.target.files?.[0] ?? null)} />
-              <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-                <button onClick={handleAddPost} disabled={addingPost || !addFile} style={{ ...btnStyle, flex: 1, opacity: (!addFile || addingPost) ? 0.4 : 1 }}>{addingPost ? "Posting..." : "Post"}</button>
-                <button onClick={() => setShowAddPost(false)} style={{ flex: 1, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "#aaa", borderRadius: 10, cursor: "pointer", fontSize: 13 }}>Cancel</button>
-              </div>
-            </div>
+     {selectedCapsule && (
+  <div className="panel" style={{
+    position: "absolute", bottom: 0, left: 0, right: 0, maxHeight: "70vh",
+    background: "rgba(10,10,10,0.98)", backdropFilter: "blur(20px)",
+    border: "1px solid rgba(255,255,255,0.08)", borderTopLeftRadius: 24, borderTopRightRadius: 24,
+    zIndex: 200, color: "#fff", overflowY: "auto", display: "flex", flexDirection: "column"
+  }}>
+    {/* Drag handle */}
+    <div style={{ width: 36, height: 4, borderRadius: 2, background: "#333", margin: "12px auto 0" }} />
+
+    {/* Header */}
+    <div style={{ padding: "16px 20px 12px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+        <div>
+          <h2 style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 20, fontWeight: 700, letterSpacing: "-0.3px" }}>{selectedCapsule.title}</h2>
+          <p style={{ fontSize: 11, color: "#555", marginTop: 4 }}>
+            📅 {new Date(selectedCapsule.created_at).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+          </p>
+        </div>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          {selectedCapsule.id !== 'fixed-bplate-capsule' && (
+            <button onClick={() => handleDeleteCapsule(selectedCapsule.id)} style={{
+              background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)",
+              color: "#ef4444", padding: "6px 10px", borderRadius: 8, fontSize: 12, cursor: "pointer"
+            }}>🗑️</button>
           )}
-          {loadingPosts ? <div style={{ textAlign: "center", color: "#555", padding: "24px 0" }}>Loading memories...</div> : capsulePosts.length === 0 ? <div style={{ textAlign: "center", color: "#444", padding: "24px 0" }}>No posts yet.</div> : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-  {capsulePosts.map((post) => (
-    <div key={post.id} style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, overflow: "hidden" }}>
-      {post.media_url && (
-        <img src={post.media_url} alt={post.caption ?? ""} style={{ width: "100%", maxHeight: 260, objectFit: "cover", display: "block" }} />
-      )}
-      <div style={{ padding: "12px 14px" }}>
-        <p style={{ fontSize: 11, color: "#555", marginBottom: 6 }}>
-          🕰 {new Date(post.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-          {" · "}
-          {new Date(post.created_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
-        </p>
-        {post.caption && (
-          <p style={{ fontSize: 13, color: "#ccc", lineHeight: 1.5 }}>{post.caption}</p>
-        )}
+          <button onClick={() => setSelectedCapsule(null)} style={{
+            background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)",
+            color: "#aaa", fontSize: 16, cursor: "pointer", width: 32, height: 32,
+            borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center"
+          }}>✕</button>
+        </div>
       </div>
     </div>
-  ))}
-</div>
-          )}
+
+    {/* Posts */}
+    <div style={{ padding: "16px 20px 32px", flex: 1 }}>
+      {loadingPosts ? (
+        <div style={{ textAlign: "center", color: "#444", padding: "40px 0", fontSize: 13 }}>
+          <div style={{ fontSize: 24, marginBottom: 8 }}>⏳</div>
+          Loading memories...
+        </div>
+      ) : capsulePosts.length === 0 ? (
+        <div style={{ textAlign: "center", color: "#444", padding: "40px 0" }}>
+          <div style={{ fontSize: 32, marginBottom: 8 }}>📭</div>
+          <p style={{ fontSize: 14, fontWeight: 600, color: "#555" }}>Nothing here yet</p>
+          <p style={{ fontSize: 12, color: "#3a3a3a", marginTop: 4 }}>Be the first to leave a memory</p>
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          {capsulePosts.map((post) => (
+            <div key={post.id} style={{
+              background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)",
+              borderRadius: 16, overflow: "hidden"
+            }}>
+              {post.media_url && (
+                <img src={post.media_url} alt={post.caption ?? ""} style={{ width: "100%", maxHeight: 280, objectFit: "cover", display: "block" }} />
+              )}
+              <div style={{ padding: "12px 14px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: post.caption ? 8 : 0 }}>
+                  <div style={{
+                    width: 20, height: 20, borderRadius: "50%",
+                    background: "linear-gradient(135deg,#f59e0b,#ef4444)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: 9, fontWeight: 700, color: "#fff", flexShrink: 0
+                  }}>
+                    {post.author_id?.slice(0, 1).toUpperCase() ?? "?"}
+                  </div>
+                  <p style={{ fontSize: 11, color: "#555" }}>
+                    {new Date(post.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                    {" · "}
+                    {new Date(post.created_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
+                  </p>
+                </div>
+                {post.caption && (
+                  <p style={{ fontSize: 13, color: "#ccc", lineHeight: 1.6 }}>{post.caption}</p>
+                )}
+              </div>
+            </div>
+          ))}
         </div>
       )}
+    </div>
+  </div>
+)}
+
+
+        
       {/* ... (Auth Modal and Location Warning UI remain identical) */}
       {showAuthModal && (
         <div onClick={() => setShowAuthModal(false)} style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center" }}>
