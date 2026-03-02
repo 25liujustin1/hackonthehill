@@ -199,69 +199,51 @@ export default function MapPage() {
       setLoadingPosts(false);
     });
   }
-
 async function handleDrop() {
   if (!user || !userPos || !dropFile || !dropTitle.trim()) return;
   setDropping(true);
   try {
-    let targetCapsule = null;
-    let minDistance = 40;
-
-    for (const cap of capsules) {
-      const dist = haversineMeters(userPos[0], userPos[1], cap.lat, cap.lng);
-      if (dist < minDistance) {
-        minDistance = dist;
-        targetCapsule = cap;
-      }
+    // Moderation check
+    const modRes = await fetch("/api/moderate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: dropTitle.trim(),
+        caption: dropCaption.trim() || null,
+        imageUrl: null
+      })
+    });
+    const { appropriate } = await modRes.json();
+    if (!appropriate) {
+      alert("Your capsule was flagged as inappropriate and could not be posted.");
+      setDropping(false);
+      return;
     }
 
-    let finalCapsuleId;
-
-    if (targetCapsule) {
-      finalCapsuleId = targetCapsule.id;
-      // If hardcoded, ensure the DB has a record of it before we try to post to it
-      if (finalCapsuleId.startsWith('fixed-')) {
-        const { error: upsertErr } = await supabase.from("capsules").upsert({
-          id: targetCapsule.id,
-          title: targetCapsule.title,
-          lat: targetCapsule.lat,
-          lng: targetCapsule.lng,
-          author_id: user.id
-        }, { onConflict: 'id' });
-        if (upsertErr) throw upsertErr;
-      }
-    } else {
-      const { data: cap, error: capErr } = await supabase
-        .from("capsules")
-        .insert({ title: dropTitle.trim(), lat: userPos[0], lng: userPos[1], author_id: user.id })
-        .select().single();
-      if (capErr || !cap) throw capErr || new Error("Failed to create capsule");
-      finalCapsuleId = cap.id;
-      setCapsules((prev) => [cap as Capsule, ...prev]);
-    }
-
-    // Now that we are 100% sure finalCapsuleId exists in the DB, run the post logic
+    const { data: cap, error: capErr } = await supabase
+      .from("capsules")
+      .insert({ title: dropTitle.trim(), lat: userPos[0], lng: userPos[1], author_id: user.id })
+      .select()
+      .single();
+    if (capErr || !cap) throw capErr;
     const ext = dropFile.name.split(".").pop();
-    const path = `${user.id}/${finalCapsuleId}-${Date.now()}.${ext}`;
+    const path = `${user.id}/${cap.id}-${Date.now()}.${ext}`;
     const { error: uploadErr } = await supabase.storage.from("capsule-media").upload(path, dropFile);
     if (uploadErr) throw uploadErr;
-    
-    const { error: postErr } = await supabase.from("posts").insert({
-      capsule_id: finalCapsuleId,
+    await supabase.from("posts").insert({
+      capsule_id: cap.id,
       caption: dropCaption.trim() || null,
       media_path: path,
       author_id: user.id,
     });
-    if (postErr) throw postErr;
-
+    setCapsules((prev) => [cap as Capsule, ...prev]);
     setShowDropPanel(false);
     setDropTitle("");
     setDropCaption("");
     setDropFile(null);
-    if (targetCapsule) alert(`📍 Added to: ${targetCapsule.title}`);
-  } catch (e: any) {
-    console.error("Drop Error:", e);
-    alert(`Error: ${e.message || "Failed to drop capsule"}`);
+  } catch (e) {
+    console.error(e);
+    alert("Check Supabase RLS Policies for capsules and storage.");
   }
   setDropping(false);
 }
