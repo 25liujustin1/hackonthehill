@@ -401,7 +401,6 @@ export default function MapPage() {
               {selectedCapsule.id !== 'fixed-bplate-capsule' && (
                 <button onClick={() => handleDeleteCapsule(selectedCapsule.id)} style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)", color: "#ef4444", padding: "6px 12px", borderRadius: 10, fontSize: 12, cursor: "pointer" }}>🗑️ Delete</button>
               )}
-              <button onClick={() => setShowAddPost(!showAddPost)} style={{ ...btnStyle, padding: "6px 14px", fontSize: 12, width: 'auto' }}>+ Add photo</button>
               <button onClick={() => setSelectedCapsule(null)} style={{ background: "none", border: "none", color: "#555", fontSize: 20, cursor: "pointer" }}>✕</button>
             </div>
           </div>
@@ -418,14 +417,25 @@ export default function MapPage() {
             </div>
           )}
           {loadingPosts ? <div style={{ textAlign: "center", color: "#555", padding: "24px 0" }}>Loading memories...</div> : capsulePosts.length === 0 ? <div style={{ textAlign: "center", color: "#444", padding: "24px 0" }}>No posts yet.</div> : (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: 8 }}>
-              {capsulePosts.map((post) => (
-                <div key={post.id} style={{ borderRadius: 10, overflow: "hidden", position: "relative", aspectRatio: "1", background: "#1a1a1a" }}>
-                  {post.media_url && <img src={post.media_url} alt={post.caption ?? ""} style={{ width: "100%", height: "100%", objectFit: "cover" }} />}
-                  {post.caption && <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "linear-gradient(transparent,rgba(0,0,0,0.75))", padding: "16px 8px 6px", fontSize: 10, color: "#fff" }}>{post.caption}</div>}
-                </div>
-              ))}
-            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+  {capsulePosts.map((post) => (
+    <div key={post.id} style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, overflow: "hidden" }}>
+      {post.media_url && (
+        <img src={post.media_url} alt={post.caption ?? ""} style={{ width: "100%", maxHeight: 260, objectFit: "cover", display: "block" }} />
+      )}
+      <div style={{ padding: "12px 14px" }}>
+        <p style={{ fontSize: 11, color: "#555", marginBottom: 6 }}>
+          🕰 {new Date(post.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+          {" · "}
+          {new Date(post.created_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
+        </p>
+        {post.caption && (
+          <p style={{ fontSize: 13, color: "#ccc", lineHeight: 1.5 }}>{post.caption}</p>
+        )}
+      </div>
+    </div>
+  ))}
+</div>
           )}
         </div>
       )}
