@@ -9,22 +9,33 @@ Title: ${title}
 Caption: ${caption ?? "none"}
 Image URL: ${imageUrl ?? "none"}
 
-Respond with only "true" or "false".`;
+It is important that you only respond with only "true" or "false". If you are unsure, just allow it and respond true.`;
 
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
     {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }]
-      })
+        contents: [
+          {
+            parts: [{ text: prompt }],
+          },
+        ],
+      }),
     }
   );
 
   const data = await response.json();
-  const result = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim().toLowerCase();
-  const isAppropriate = result === "true";
+
+  const result =
+    data.candidates?.[0]?.content?.parts?.[0]?.text
+      ?.trim()
+      ?.toLowerCase();
+
+  const isAppropriate = result?.includes("true") ?? true;
 
   return NextResponse.json({ appropriate: isAppropriate });
 }
