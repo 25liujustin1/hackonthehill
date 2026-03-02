@@ -126,18 +126,19 @@ export default function MapPage() {
     };
   }, []);
 
-  // 3. CAPSULE FETCHING + UCLA LANDMARKS INJECTION
-  useEffect(() => {
-    if (!user) return;
-    supabase
-      .from("capsules")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .then(({ data }) => {
-        if (data) setCapsules([...FIXED_CAPSULES, ...data]);
-        else setCapsules([...FIXED_CAPSULES]);
-      });
-  }, [user]);
+ // 3. CAPSULE FETCHING + UCLA LANDMARKS INJECTION
+useEffect(() => {
+  if (!user) return;
+  supabase
+    .from("capsules")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .then(({ data }) => {
+      const fixedIds = new Set(FIXED_CAPSULES.map((c) => c.id));
+      const dynamicOnly = (data ?? []).filter((c) => !fixedIds.has(c.id));
+      setCapsules([...FIXED_CAPSULES, ...dynamicOnly]);
+    });
+}, [user]);
 
   function isUnlocked(capsule: Capsule): boolean {
     if (!userPos) return false;
