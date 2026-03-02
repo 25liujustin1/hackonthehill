@@ -139,6 +139,27 @@ export default function MapPage() {
     return haversineMeters(userPos[0], userPos[1], capsule.lat, capsule.lng) <= UNLOCK_RADIUS_M;
   }
 
+async function handleDeletePost(postId: string) {
+  if (!user) return;
+  if (!confirm("Delete this memory forever?")) return;
+
+  try {
+    const { error } = await supabase
+      .from("posts")
+      .delete()
+      .eq("id", postId)
+      .eq("author_id", user.id); // Security: ensures only the author can delete
+
+    if (error) throw error;
+
+    // Remove the post from the local state so the UI updates immediately
+    setCapsulePosts((prev) => prev.filter((p) => p.id !== postId));
+  } catch (e) {
+    console.error(e);
+    alert("Error: You can only delete your own posts.");
+  }
+}
+
   async function handleDeleteCapsule(capsuleId: string) {
     if (!user || capsuleId.startsWith('fixed-')) return;
     if (!confirm("Are you sure you want to delete this capsule?")) return;
@@ -499,23 +520,35 @@ async function handleAddPost() {
           )}
           {loadingPosts ? <div style={{ textAlign: "center", color: "#555", padding: "24px 0" }}>Loading memories...</div> : capsulePosts.length === 0 ? <div style={{ textAlign: "center", color: "#444", padding: "24px 0" }}>No posts yet.</div> : (
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-  {capsulePosts.map((post) => (
-    <div key={post.id} style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, overflow: "hidden" }}>
-      {post.media_url && (
-        <img src={post.media_url} alt={post.caption ?? ""} style={{ width: "100%", maxHeight: 260, objectFit: "cover", display: "block" }} />
+{capsulePosts.map((post) => (
+  <div key={post.id} style={{ position: 'relative', background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, overflow: "hidden" }}>
+    
+    {/* Delete Button (Only shows for the author) */}
+    {user?.id === post.author_id && (
+      <button 
+        onClick={(e) => { e.stopPropagation(); handleDeletePost(post.id); }}
+        style={{
+          position: 'absolute', top: 8, right: 8,
+          background: "rgba(0,0,0,0.5)", border: "none", color: "#ff4444",
+          width: 28, height: 28, borderRadius: "50%", cursor: "pointer",
+          zIndex: 10, fontSize: 14, backdropFilter: 'blur(4px)'
+        }}
+      >🗑️</button>
+    )}
+
+    {post.media_url && (
+      <img src={post.media_url} alt={post.caption ?? ""} style={{ width: "100%", maxHeight: 260, objectFit: "cover", display: "block" }} />
+    )}
+    <div style={{ padding: "12px 14px" }}>
+      <p style={{ fontSize: 11, color: "#555", marginBottom: 6 }}>
+        🕰 {new Date(post.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+      </p>
+      {post.caption && (
+        <p style={{ fontSize: 13, color: "#ccc", lineHeight: 1.5 }}>{post.caption}</p>
       )}
-      <div style={{ padding: "12px 14px" }}>
-        <p style={{ fontSize: 11, color: "#555", marginBottom: 6 }}>
-          🕰 {new Date(post.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-          {" · "}
-          {new Date(post.created_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
-        </p>
-        {post.caption && (
-          <p style={{ fontSize: 13, color: "#ccc", lineHeight: 1.5 }}>{post.caption}</p>
-        )}
-      </div>
     </div>
-  ))}
+  </div>
+))}
 </div>
           )}
         </div>
