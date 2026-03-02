@@ -149,6 +149,9 @@ export default function MapPage() {
       if (!isUnlocked(capsule)) return;
       setSelectedCapsule(capsule);
       setShowAddPost(false);
+      setAddFile(null);
+      setAddCaption("");
+
       setCapsulePosts([]);
       setLoadingPosts(true);
       const { data: posts } = await supabase
@@ -248,12 +251,19 @@ export default function MapPage() {
         .panel { animation: fadeUp 0.2s ease; }
       `}</style>
 
-      <Map
-        center={center}
-        zoom={zoom}
-        onBoundsChanged={({ center, zoom }) => { setCenter(center); setZoom(zoom); }}
-        onClick={() => { setSelectedCapsule(null); setShowDropPanel(false); }}
-      >
+<Map
+  center={center}
+  zoom={zoom}
+  onBoundsChanged={({ center, zoom }) => { setCenter(center); setZoom(zoom); }}
+  // FIX: Only close panels if the click was actually on the map background, 
+  // not accidentally triggered by a panel closing
+  onClick={({ event }) => { 
+    if (event.target.tagName === 'CANVAS' || event.target.className.includes('pigeon-click-block')) {
+      setSelectedCapsule(null); 
+      setShowDropPanel(false); 
+    }
+  }}
+>
         {userPos && (
           <Overlay anchor={userPos} offset={[10, 10]}>
             <div style={{ position: "relative", width: 20, height: 20 }}>
@@ -322,12 +332,54 @@ export default function MapPage() {
       </div>
 
       {/* Control Buttons */}
-      {user && userPos && (
-        <button className="capsule-btn" onClick={() => { setShowDropPanel(true); setSelectedCapsule(null); }} style={{ position: "absolute", bottom: 32, right: 24, width: 56, height: 56, borderRadius: "50%", background: "linear-gradient(135deg,#f59e0b,#ef4444)", border: "none", color: "#fff", fontSize: 24, cursor: "pointer", boxShadow: "0 4px 24px rgba(245,158,11,0.4)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
-      )}
-      {userPos && (
-        <button className="capsule-btn" onClick={() => setCenter(userPos)} style={{ position: "absolute", bottom: 100, right: 24, width: 44, height: 44, borderRadius: "50%", background: "rgba(10,10,10,0.85)", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.12)", color: "#3b82f6", fontSize: 18, cursor: "pointer", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center" }}>◎</button>
-      )}
+{user && userPos && (
+  <button 
+    className="capsule-btn" 
+    onClick={(e) => {
+      e.stopPropagation(); // FIX: Prevent the map from closing the panel immediately
+      setShowDropPanel(true); 
+      setSelectedCapsule(null); 
+    }} 
+    style={{ 
+      position: "absolute", bottom: 32, right: 24, 
+      width: 56, height: 56, borderRadius: "50%", 
+      background: "linear-gradient(135deg,#f59e0b,#ef4444)", 
+      border: "none", color: "#fff", fontSize: 24, cursor: "pointer", 
+      boxShadow: "0 4px 24px rgba(245,158,11,0.4)", 
+      zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center" 
+    }}
+  >+</button>
+)}
+
+{/* 1. ADD THE DROP PANEL UI */}
+{showDropPanel && (
+  <div className="panel" style={{
+    position: "absolute", bottom: 100, right: 24, left: 24,
+    maxWidth: 380, margin: "0 auto",
+    background: "rgba(15,15,15,0.95)", backdropFilter: "blur(16px)",
+    border: "1px solid rgba(255,255,255,0.1)", borderRadius: 16,
+    padding: 20, zIndex: 200, color: "#fff"
+  }}>
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+      <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 15 }}>Drop a Capsule 📦</span>
+      <button onClick={() => setShowDropPanel(false)} style={{ background: "none", border: "none", color: "#666", fontSize: 18, cursor: "pointer" }}>✕</button>
+    </div>
+    <input placeholder="Capsule title (e.g. Powell Library)" value={dropTitle} onChange={(e) => setDropTitle(e.target.value)} style={inputStyle} />
+    <input placeholder="Caption (optional)" value={dropCaption} onChange={(e) => setDropCaption(e.target.value)} style={{ ...inputStyle, marginTop: 10 }} />
+    <div onClick={() => fileInputRef.current?.click()} style={{
+      marginTop: 10, border: "1.5px dashed rgba(255,255,255,0.2)",
+      borderRadius: 10, padding: "14px", textAlign: "center",
+      cursor: "pointer", color: "#777", fontSize: 13,
+      background: dropFile ? "rgba(245,158,11,0.06)" : "transparent"
+    }}>
+      {dropFile ? `📎 ${dropFile.name}` : "Tap to attach a photo"}
+    </div>
+    <input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => setDropFile(e.target.files?.[0] ?? null)} />
+    <button onClick={handleDrop} disabled={dropping || !dropTitle.trim() || !dropFile} style={{ ...btnStyle, marginTop: 14, opacity: (!dropTitle.trim() || !dropFile || dropping) ? 0.4 : 1 }}>
+      {dropping ? "Dropping..." : "Drop it here 📍"}
+    </button>
+  </div>
+)}
 
       {/* Selected Capsule Panel */}
       {selectedCapsule && (
