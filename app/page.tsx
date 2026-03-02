@@ -35,38 +35,30 @@ function haversineMeters(lat1: number, lng1: number, lat2: number, lng2: number)
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-const UNLOCK_RADIUS_M = 50;
+const UNLOCK_RADIUS_M = 30;
 
-// Helper to detect hardcoded landmark IDs
 function isFixedCapsule(id: string): boolean {
   return id.startsWith('00000000-0000-0000-0000-');
 }
 
 const FIXED_CAPSULES: Capsule[] = [
-  // --- North Campus & Humanities ---
   { id: '00000000-0000-0000-0000-000000000001', title: "Powell Library 📚", lat: 34.0716, lng: -118.4422, created_at: "", approved: true },
   { id: '00000000-0000-0000-0000-000000000002', title: "Royce Hall 🏛️", lat: 34.0729, lng: -118.4422, created_at: "", approved: true },
   { id: '00000000-0000-0000-0000-000000000003', title: "Janss Steps 🏃", lat: 34.0722, lng: -118.4432, created_at: "", approved: true },
   { id: '00000000-0000-0000-0000-000000000004', title: "Young Research Library (YRL) 📖", lat: 34.0749, lng: -118.4415, created_at: "", approved: true },
   { id: '00000000-0000-0000-0000-000000000005', title: "Murphy Sculpture Garden 🌳", lat: 34.0747, lng: -118.4382, created_at: "", approved: true },
   { id: '00000000-0000-0000-0000-000000000006', title: "Broad Art Center 🎨", lat: 34.0754, lng: -118.4398, created_at: "", approved: true },
-  
-  // --- South Campus & STEM ---
   { id: '00000000-0000-0000-0000-000000000007', title: "Boelter Hall 💻", lat: 34.0692, lng: -118.4431, created_at: "", approved: true },
   { id: '00000000-0000-0000-0000-000000000008', title: "Math Sciences 🧮", lat: 34.0693, lng: -118.4442, created_at: "", approved: true },
   { id: '00000000-0000-0000-0000-000000000009', title: "Inverted Fountain ⛲", lat: 34.0688, lng: -118.4428, created_at: "", approved: true },
   { id: '00000000-0000-0000-0000-000000000010', title: "Botanical Garden 🌺", lat: 34.0662, lng: -118.4414, created_at: "", approved: true },
   { id: '00000000-0000-0000-0000-000000000011', title: "CNSI Building 🔬", lat: 34.0684, lng: -118.4435, created_at: "", approved: true },
-
-  // --- Student Life & Central Campus ---
   { id: '00000000-0000-0000-0000-000000000012', title: "The Bruin Bear 🐻", lat: 34.0709, lng: -118.4446, created_at: "", approved: true },
   { id: '00000000-0000-0000-0000-000000000013', title: "Ackerman Union 🍔", lat: 34.0704, lng: -118.4441, created_at: "", approved: true },
   { id: '00000000-0000-0000-0000-000000000014', title: "Kerckhoff Coffee House ☕", lat: 34.0705, lng: -118.4433, created_at: "", approved: true },
   { id: '00000000-0000-0000-0000-000000000015', title: "John Wooden Center 🏋️", lat: 34.0711, lng: -118.4461, created_at: "", approved: true },
   { id: '00000000-0000-0000-0000-000000000016', title: "Pauley Pavilion 🏀", lat: 34.0699, lng: -118.4468, created_at: "", approved: true },
   { id: '00000000-0000-0000-0000-000000000017', title: "Drake Stadium 🏃‍♂️", lat: 34.0722, lng: -118.4485, created_at: "", approved: true },
-
-  // --- The Hill (Housing & Dining) ---
   { id: '00000000-0000-0000-0000-000000000018', title: "Bruin Plate (B-Plate) 🥗", lat: 34.0719, lng: -118.4500, created_at: "", approved: true },
   { id: '00000000-0000-0000-0000-000000000019', title: "Epicuria at Covel 🍝", lat: 34.0728, lng: -118.4501, created_at: "", approved: true },
   { id: '00000000-0000-0000-0000-000000000020', title: "Feast at Rieber 🍣", lat: 34.0732, lng: -118.4514, created_at: "", approved: true },
@@ -78,7 +70,6 @@ const FIXED_CAPSULES: Capsule[] = [
 
 export default function MapPage() {
   const supabase = createClient();
-
   const [user, setUser] = useState<any>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [center, setCenter] = useState<[number, number]>([34.0689, -118.4452]);
@@ -99,8 +90,7 @@ export default function MapPage() {
   const [addFile, setAddFile] = useState<File | null>(null);
   const [addingPost, setAddingPost] = useState(false);
   const addFileInputRef = useRef<HTMLInputElement>(null);
-
-  // 1. AUTH LOGIC
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUser(data.user ?? null));
     const { data: listener } = supabase.auth.onAuthStateChange((_e, session) => {
@@ -109,7 +99,6 @@ export default function MapPage() {
     return () => listener.subscription.unsubscribe();
   }, []);
 
-  // 2. HIGH-PERFORMANCE GEOLOCATION
   useEffect(() => {
     if (!navigator.geolocation) return;
     const geoOptions = { enableHighAccuracy: true, maximumAge: 0, timeout: 2000 };
@@ -126,19 +115,18 @@ export default function MapPage() {
     };
   }, []);
 
- // 3. CAPSULE FETCHING + UCLA LANDMARKS INJECTION
-useEffect(() => {
-  if (!user) return;
-  supabase
-    .from("capsules")
-    .select("*")
-    .order("created_at", { ascending: false })
-    .then(({ data }) => {
-      const fixedIds = new Set(FIXED_CAPSULES.map((c) => c.id));
-      const dynamicOnly = (data ?? []).filter((c) => !fixedIds.has(c.id));
-      setCapsules([...FIXED_CAPSULES, ...dynamicOnly]);
-    });
-}, [user]);
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("capsules")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .then(({ data }) => {
+        const fixedIds = new Set(FIXED_CAPSULES.map((c) => c.id));
+        const dynamicOnly = (data ?? []).filter((c) => !fixedIds.has(c.id));
+        setCapsules([...FIXED_CAPSULES, ...dynamicOnly]);
+      });
+  }, [user]);
 
   function isUnlocked(capsule: Capsule): boolean {
     if (!userPos) return false;
@@ -148,14 +136,8 @@ useEffect(() => {
   async function handleDeletePost(postId: string) {
     if (!user) return;
     if (!confirm("Delete this memory forever?")) return;
-
     try {
-      const { error } = await supabase
-        .from("posts")
-        .delete()
-        .eq("id", postId)
-        .eq("author_id", user.id);
-
+      const { error } = await supabase.from("posts").delete().eq("id", postId).eq("author_id", user.id);
       if (error) throw error;
       setCapsulePosts((prev) => prev.filter((p) => p.id !== postId));
     } catch (e) {
@@ -204,7 +186,6 @@ useEffect(() => {
       setShowAddPost(false);
       setAddFile(null);
       setAddCaption("");
-
       setCapsulePosts([]);
       setLoadingPosts(true);
       const { data: posts } = await supabase
@@ -225,7 +206,6 @@ useEffect(() => {
     });
   }
 
-  // Helper: ensure a fixed landmark exists in the DB before posting to it
   async function upsertFixedCapsule(capsule: Capsule) {
     const { error } = await supabase.from("capsules").upsert({
       id: capsule.id,
@@ -237,111 +217,78 @@ useEffect(() => {
     if (error) throw error;
   }
 
+  async function handleDrop() {
+    if (!user || !userPos || !dropFile || !dropTitle.trim()) return;
+    setDropping(true);
+    try {
+      let targetCapsule: Capsule | null = null;
+      let minDistance = UNLOCK_RADIUS_M; // ✅ Fixed: use same constant as unlock radius
 
+      for (const cap of capsules) {
+        const dist = haversineMeters(userPos[0], userPos[1], cap.lat, cap.lng);
+        if (dist < minDistance) {
+          minDistance = dist;
+          targetCapsule = cap;
+        }
+      }
 
-async function handleDrop() {
-  if (!user || !userPos || !dropFile || !dropTitle.trim()) return;
-  setDropping(true);
-  try {
-    // Moderation check
-    const modRes = await fetch("/api/moderate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        title: dropTitle.trim(),
+      let finalCapsuleId: string;
+
+      if (targetCapsule) {
+        finalCapsuleId = targetCapsule.id;
+        // ✅ Fixed: check for the actual ID format used by hardcoded landmarks
+        if (isFixedCapsule(finalCapsuleId)) {
+          await upsertFixedCapsule(targetCapsule);
+        }
+      } else {
+        const { data: cap, error: capErr } = await supabase
+          .from("capsules")
+          .insert({ title: dropTitle.trim(), lat: userPos[0], lng: userPos[1], author_id: user.id })
+          .select().single();
+        if (capErr || !cap) throw capErr || new Error("Failed to create capsule");
+        finalCapsuleId = cap.id;
+        setCapsules((prev) => [cap as Capsule, ...prev]);
+      }
+
+      const ext = dropFile.name.split(".").pop();
+      const path = `${user.id}/${finalCapsuleId}-${Date.now()}.${ext}`;
+      const { error: uploadErr } = await supabase.storage.from("capsule-media").upload(path, dropFile);
+      if (uploadErr) throw uploadErr;
+
+      const { error: postErr } = await supabase.from("posts").insert({
+        capsule_id: finalCapsuleId,
         caption: dropCaption.trim() || null,
-        imageUrl: null
-      })
-    });
-    const { appropriate } = await modRes.json();
-    if (!appropriate) {
-      alert("⚠️ Your capsule was flagged as inappropriate and could not be posted.");
-      setDropping(false);
-      return;
+        media_path: path,
+        author_id: user.id,
+      });
+      if (postErr) throw postErr;
+
+      setShowDropPanel(false);
+      setDropTitle("");
+      setDropCaption("");
+      setDropFile(null);
+      if (targetCapsule) alert(`📍 Added to: ${targetCapsule.title}`);
+    } catch (e: any) {
+      console.error("Drop Error:", e);
+      alert(`Error: ${e.message || "Failed to drop capsule"}`);
     }
-
-    let targetCapsule: Capsule | null = null;
-    let minDistance = UNLOCK_RADIUS_M;
-
-    for (const cap of capsules) {
-      const dist = haversineMeters(userPos[0], userPos[1], cap.lat, cap.lng);
-      if (dist < minDistance) {
-        minDistance = dist;
-        targetCapsule = cap;
-      }
-    }
-
-    let finalCapsuleId: string;
-
-    if (targetCapsule) {
-      finalCapsuleId = targetCapsule.id;
-      if (isFixedCapsule(finalCapsuleId)) {
-        await upsertFixedCapsule(targetCapsule);
-      }
-    } else {
-      const { data: cap, error: capErr } = await supabase
-        .from("capsules")
-        .insert({ title: dropTitle.trim(), lat: userPos[0], lng: userPos[1], author_id: user.id })
-        .select().single();
-      if (capErr || !cap) throw capErr || new Error("Failed to create capsule");
-      finalCapsuleId = cap.id;
-      setCapsules((prev) => [cap as Capsule, ...prev]);
-    }
-
-    const ext = dropFile.name.split(".").pop();
-    const path = `${user.id}/${finalCapsuleId}-${Date.now()}.${ext}`;
-    const { error: uploadErr } = await supabase.storage.from("capsule-media").upload(path, dropFile);
-    if (uploadErr) throw uploadErr;
-
-    const { error: postErr } = await supabase.from("posts").insert({
-      capsule_id: finalCapsuleId,
-      caption: dropCaption.trim() || null,
-      media_path: path,
-      author_id: user.id,
-    });
-    if (postErr) throw postErr;
-
-    setShowDropPanel(false);
-    setDropTitle("");
-    setDropCaption("");
-    setDropFile(null);
-    if (targetCapsule) alert(`📍 Added to: ${targetCapsule.title}`);
-  } catch (e: any) {
-    console.error("Drop Error:", e);
-    alert(`Error: ${e.message || "Failed to drop capsule"}`);
+    setDropping(false);
   }
-  setDropping(false);
-}
 
-
-
-  
   async function handleAddPost() {
     if (!user || !selectedCapsule || !addFile) return;
     setAddingPost(true);
     try {
-      // ✅ Fixed: check for the actual ID format used by hardcoded landmarks
-      if (isFixedCapsule(selectedCapsule.id)) {
-        await upsertFixedCapsule(selectedCapsule);
-      }
-
+      if (isFixedCapsule(selectedCapsule.id)) await upsertFixedCapsule(selectedCapsule);
       const ext = addFile.name.split(".").pop();
       const path = `${user.id}/${selectedCapsule.id}-${Date.now()}.${ext}`;
       const { error: uploadErr } = await supabase.storage.from("capsule-media").upload(path, addFile);
       if (uploadErr) throw uploadErr;
-
       const { data: post, error: postErr } = await supabase
         .from("posts")
-        .insert({
-          capsule_id: selectedCapsule.id,
-          caption: addCaption.trim() || null,
-          media_path: path,
-          author_id: user.id,
-        })
+        .insert({ capsule_id: selectedCapsule.id, caption: addCaption.trim() || null, media_path: path, author_id: user.id })
         .select().single();
-
       if (postErr) throw postErr;
-
       if (post) {
         const { data } = supabase.storage.from("capsule-media").getPublicUrl(path);
         setCapsulePosts((prev) => [{ ...(post as Post), media_url: data.publicUrl }, ...prev]);
@@ -370,6 +317,12 @@ async function handleDrop() {
         @keyframes ping { 0%,100%{transform:scale(1);opacity:.8} 50%{transform:scale(1.4);opacity:0} }
         .ping { animation: ping 1.8s ease-in-out infinite; }
         .panel { animation: fadeUp 0.2s ease; }
+        
+        /* Fixed Image Scaling */
+        .post-card { position: relative; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); borderRadius: 14px; overflow: hidden; }
+        .post-image-container { width: 100%; aspect-ratio: 1 / 1; overflow: hidden; background: #111; }
+        .post-image-container img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.3s ease; }
+        .post-card:hover .post-image-container img { transform: scale(1.05); }
       `}</style>
 
       <Map
@@ -431,15 +384,8 @@ async function handleDrop() {
         })}
       </Map>
 
-      {/* Top Header */}
-      <div style={{
-        position: "absolute", top: 16, left: "50%", transform: "translateX(-50%)",
-        display: "flex", alignItems: "center", gap: 12,
-        background: "rgba(10,10,10,0.85)", backdropFilter: "blur(12px)",
-        padding: "10px 18px", borderRadius: 999, border: "1px solid rgba(255,255,255,0.08)",
-        zIndex: 100
-      }}>
-        <span style={{ fontFamily: "'Space Grotesk',sans-serif", color: "#fff", fontWeight: 700, fontSize: 15 }}>📍 TimeCapsule</span>
+      <div style={{ position: "absolute", top: 16, left: "50%", transform: "translateX(-50%)", display: "flex", alignItems: "center", gap: 12, background: "rgba(10,10,10,0.85)", backdropFilter: "blur(12px)", padding: "10px 18px", borderRadius: 999, border: "1px solid rgba(255,255,255,0.08)", zIndex: 100 }}>
+        <span style={{ fontFamily: "'Space Grotesk',sans-serif", color: "#fff", fontWeight: 700, fontSize: 15 }}>📍 BruinCapsule</span>
         {user ? (
           <>
             <div style={{ width: 1, height: 16, background: "rgba(255,255,255,0.15)" }} />
@@ -451,83 +397,66 @@ async function handleDrop() {
         )}
       </div>
 
-      {/* Control Buttons */}
       {user && userPos && (
-        <button 
-          className="capsule-btn" 
-          onClick={(e) => {
-            e.stopPropagation();
-            setShowDropPanel(true); 
-            setSelectedCapsule(null); 
-          }} 
-          style={{ 
-            position: "absolute", bottom: 32, right: 24, 
-            width: 56, height: 56, borderRadius: "50%", 
-            background: "linear-gradient(135deg,#f59e0b,#ef4444)", 
-            border: "none", color: "#fff", fontSize: 24, cursor: "pointer", 
-            boxShadow: "0 4px 24px rgba(245,158,11,0.4)", 
-            zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center" 
-          }}
-        >+</button>
+        <button className="capsule-btn" onClick={(e) => { e.stopPropagation(); setShowDropPanel(true); setSelectedCapsule(null); }} style={{ position: "absolute", bottom: 32, right: 24, width: 56, height: 56, borderRadius: "50%", background: "linear-gradient(135deg,#f59e0b,#ef4444)", border: "none", color: "#fff", fontSize: 24, cursor: "pointer", boxShadow: "0 4px 24px rgba(245,158,11,0.4)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
       )}
 
-      {/* DROP PANEL UI */}
       {showDropPanel && (
-        <div className="panel" style={{
-          position: "absolute", bottom: 100, right: 24, left: 24,
-          maxWidth: 380, margin: "0 auto",
-          background: "rgba(15,15,15,0.95)", backdropFilter: "blur(16px)",
-          border: "1px solid rgba(255,255,255,0.1)", borderRadius: 16,
-          padding: 20, zIndex: 200, color: "#fff"
-        }}>
+        <div className="panel" style={{ position: "absolute", bottom: 100, right: 24, left: 24, maxWidth: 380, margin: "0 auto", background: "rgba(15,15,15,0.95)", backdropFilter: "blur(16px)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 16, padding: 20, zIndex: 200, color: "#fff" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
             <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 15 }}>Drop a Capsule 📦</span>
             <button onClick={() => setShowDropPanel(false)} style={{ background: "none", border: "none", color: "#666", fontSize: 18, cursor: "pointer" }}>✕</button>
           </div>
           <input placeholder="Capsule title (e.g. Powell Library)" value={dropTitle} onChange={(e) => setDropTitle(e.target.value)} style={inputStyle} />
           <input placeholder="Caption (optional)" value={dropCaption} onChange={(e) => setDropCaption(e.target.value)} style={{ ...inputStyle, marginTop: 10 }} />
-          <div onClick={() => fileInputRef.current?.click()} style={{
-            marginTop: 10, border: "1.5px dashed rgba(255,255,255,0.2)",
-            borderRadius: 10, padding: "14px", textAlign: "center",
-            cursor: "pointer", color: "#777", fontSize: 13,
-            background: dropFile ? "rgba(245,158,11,0.06)" : "transparent"
-          }}>
-            {dropFile ? `📎 ${dropFile.name}` : "Tap to attach a photo"}
-          </div>
+          <div onClick={() => fileInputRef.current?.click()} style={{ marginTop: 10, border: "1.5px dashed rgba(255,255,255,0.2)", borderRadius: 10, padding: "14px", textAlign: "center", cursor: "pointer", color: "#777", fontSize: 13, background: dropFile ? "rgba(245,158,11,0.06)" : "transparent" }}>{dropFile ? `📎 ${dropFile.name}` : "Tap to attach a photo"}</div>
           <input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => setDropFile(e.target.files?.[0] ?? null)} />
-          <button onClick={handleDrop} disabled={dropping || !dropTitle.trim() || !dropFile} style={{ ...btnStyle, marginTop: 14, opacity: (!dropTitle.trim() || !dropFile || dropping) ? 0.4 : 1 }}>
-            {dropping ? "Dropping..." : "Drop it here 📍"}
-          </button>
+          <button onClick={handleDrop} disabled={dropping || !dropTitle.trim() || !dropFile} style={{ ...btnStyle, marginTop: 14, opacity: (!dropTitle.trim() || !dropFile || dropping) ? 0.4 : 1 }}>{dropping ? "Dropping..." : "Drop it here 📍"}</button>
         </div>
       )}
 
-      {/* Selected Capsule Panel */}
+     {/* Selected Capsule Panel */}
       {selectedCapsule && (
         <div className="panel" style={{
-          position: "absolute", bottom: 0, left: 0, right: 0, maxHeight: "55vh",
+          position: "absolute", bottom: 0, left: 0, right: 0, maxHeight: "65vh",
           background: "rgba(12,12,12,0.97)", backdropFilter: "blur(16px)",
           border: "1px solid rgba(255,255,255,0.08)", borderTopLeftRadius: 20, borderTopRightRadius: 20,
-          padding: "20px 20px 32px", zIndex: 200, color: "#fff", overflowY: "auto"
+          padding: "20px 0px 32px", zIndex: 200, color: "#fff", overflowY: "auto"
         }}>
           <div style={{ width: 40, height: 4, borderRadius: 2, background: "#333", margin: "0 auto 16px" }} />
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
+          
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16, padding: "0 20px" }}>
             <div>
-              <h2 style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 18, fontWeight: 700 }}>{selectedCapsule.title}</h2>
-              <p style={{ fontSize: 11, color: "#555", marginTop: 2 }}>
-                {selectedCapsule.created_at ? new Date(selectedCapsule.created_at).toLocaleDateString() : 'Iconic Location'}
-              </p>
+<h2 style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 18, fontWeight: 700 }}>
+    {selectedCapsule.title}
+  </h2>
+  {/* Add this line to show the capsule's specific description/caption */}
+  <p style={{ fontSize: 13, color: "#aaa", marginTop: 4 }}>
+    {selectedCapsule.caption} 
+  </p>
+  <p style={{ fontSize: 11, color: "#555", marginTop: 2 }}>
+    {selectedCapsule.created_at ? new Date(selectedCapsule.created_at).toLocaleDateString() : 'Iconic Location'}
+  </p>
             </div>
             <div style={{ display: "flex", gap: 8 }}>
+              {/* VIEW TOGGLE */}
+              <button 
+                onClick={() => setViewMode(viewMode === "grid" ? "list" : "grid")}
+                style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "#aaa", padding: "6px 10px", borderRadius: 10, fontSize: 12, cursor: "pointer" }}
+              >
+                {viewMode === "grid" ? "📱 List" : "🧱 Grid"}
+              </button>
+
               {!isFixedCapsule(selectedCapsule.id) && user?.id === selectedCapsule.author_id && (
-                <button onClick={() => handleDeleteCapsule(selectedCapsule.id)} style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)", color: "#ef4444", padding: "6px 12px", borderRadius: 10, fontSize: 12, cursor: "pointer" }}>🗑️ Delete</button>
+                <button onClick={() => handleDeleteCapsule(selectedCapsule.id)} style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)", color: "#ef4444", padding: "6px 12px", borderRadius: 10, fontSize: 12, cursor: "pointer" }}>🗑️</button>
               )}
-              <button onClick={() => setShowAddPost(!showAddPost)} style={{ ...btnStyle, padding: "6px 14px", fontSize: 12, width: 'auto' }}>+ Add photo</button>
+              <button onClick={() => setShowAddPost(!showAddPost)} style={{ ...btnStyle, padding: "6px 14px", fontSize: 12, width: 'auto' }}>+ Add</button>
               <button onClick={() => setSelectedCapsule(null)} style={{ background: "none", border: "none", color: "#555", fontSize: 20, cursor: "pointer" }}>✕</button>
             </div>
           </div>
 
           {showAddPost && (
-            <div style={{ background: "rgba(255,255,255,0.04)", borderRadius: 12, padding: 14, marginBottom: 16, border: "1px solid rgba(255,255,255,0.07)" }}>
+            <div style={{ margin: "0 20px 16px", background: "rgba(255,255,255,0.04)", borderRadius: 12, padding: 14, border: "1px solid rgba(255,255,255,0.07)" }}>
               <input placeholder="Caption" value={addCaption} onChange={(e) => setAddCaption(e.target.value)} style={inputStyle} />
               <div onClick={() => addFileInputRef.current?.click()} style={{ marginTop: 10, border: "1.5px dashed rgba(255,255,255,0.15)", borderRadius: 10, padding: "12px", textAlign: "center", cursor: "pointer", color: "#666", fontSize: 12, background: addFile ? "rgba(245,158,11,0.05)" : "transparent" }}>{addFile ? `📎 ${addFile.name}` : "Attach photo"}</div>
               <input ref={addFileInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => setAddFile(e.target.files?.[0] ?? null)} />
@@ -543,31 +472,58 @@ async function handleDrop() {
           ) : capsulePosts.length === 0 ? (
             <div style={{ textAlign: "center", color: "#444", padding: "24px 0" }}>No posts yet.</div>
           ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div style={{ 
+              display: "flex", 
+              flexWrap: "wrap", 
+              flexDirection: viewMode === "grid" ? "row" : "column",
+              gap: viewMode === "grid" ? "2px" : "16px",
+              padding: viewMode === "grid" ? "0" : "0 20px"
+            }}>
               {capsulePosts.map((post) => (
-                <div key={post.id} style={{ position: 'relative', background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, overflow: "hidden" }}>
+                <div key={post.id} className="post-card" style={{ 
+                  position: 'relative',
+                  width: viewMode === "grid" ? "calc(33.33% - 1.34px)" : "100%",
+                  borderRadius: viewMode === "grid" ? "0" : "14px",
+                  background: "rgba(255,255,255,0.04)",
+                  border: viewMode === "grid" ? "none" : "1px solid rgba(255,255,255,0.07)",
+                  overflow: "hidden"
+                }}>
                   {user?.id === post.author_id && (
                     <button 
-                      onClick={(e) => { e.stopPropagation(); handleDeletePost(post.id); }}
-                      style={{
-                        position: 'absolute', top: 8, right: 8,
-                        background: "rgba(0,0,0,0.5)", border: "none", color: "#ff4444",
-                        width: 28, height: 28, borderRadius: "50%", cursor: "pointer",
-                        zIndex: 10, fontSize: 14, backdropFilter: 'blur(4px)'
-                      }}
+                      onClick={(e) => { e.stopPropagation(); handleDeletePost(post.id); }} 
+                      style={{ position: 'absolute', top: 4, right: 4, background: "rgba(0,0,0,0.5)", border: "none", color: "#ff4444", width: 24, height: 24, borderRadius: "50%", cursor: "pointer", zIndex: 10, fontSize: 10, backdropFilter: 'blur(4px)' }}
                     >🗑️</button>
                   )}
-                  {post.media_url && (
-                    <img src={post.media_url} alt={post.caption ?? ""} style={{ width: "100%", maxHeight: 260, objectFit: "cover", display: "block" }} />
-                  )}
-                  <div style={{ padding: "12px 14px" }}>
-                    <p style={{ fontSize: 11, color: "#555", marginBottom: 6 }}>
-                      🕰 {new Date(post.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                    </p>
-                    {post.caption && (
-                      <p style={{ fontSize: 13, color: "#ccc", lineHeight: 1.5 }}>{post.caption}</p>
+
+                  <div className="post-image-container" style={{ width: '100%', aspectRatio: '1/1', overflow: 'hidden', background: '#111', position: 'relative' }}>
+                    {post.media_url && (
+                      <img 
+                        src={post.media_url} 
+                        alt={post.caption ?? ""} 
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} 
+                      />
+                    )}
+
+                    {/* Grid Caption Overlay */}
+                    {viewMode === "grid" && post.caption && (
+                      <div style={{
+                        position: 'absolute', bottom: 0, left: 0, right: 0,
+                        background: 'linear-gradient(transparent, rgba(0,0,0,0.8) 80%)',
+                        padding: '20px 8px 6px', fontSize: '11px', color: '#fff',
+                        whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                        pointerEvents: 'none', fontWeight: 500
+                      }}>
+                        {post.caption}
+                      </div>
                     )}
                   </div>
+
+                  {viewMode === "list" && (
+                    <div style={{ padding: "12px 14px" }}>
+                      <p style={{ fontSize: 11, color: "#555", marginBottom: 6 }}>🕰 {new Date(post.created_at).toLocaleDateString()}</p>
+                      {post.caption && <p style={{ fontSize: 13, color: "#ccc", lineHeight: 1.5 }}>{post.caption}</p>}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
