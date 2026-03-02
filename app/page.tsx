@@ -385,7 +385,7 @@ export default function MapPage() {
       </Map>
 
       <div style={{ position: "absolute", top: 16, left: "50%", transform: "translateX(-50%)", display: "flex", alignItems: "center", gap: 12, background: "rgba(10,10,10,0.85)", backdropFilter: "blur(12px)", padding: "10px 18px", borderRadius: 999, border: "1px solid rgba(255,255,255,0.08)", zIndex: 100 }}>
-        <span style={{ fontFamily: "'Space Grotesk',sans-serif", color: "#fff", fontWeight: 700, fontSize: 15 }}>📍 TimeCapsule</span>
+        <span style={{ fontFamily: "'Space Grotesk',sans-serif", color: "#fff", fontWeight: 700, fontSize: 15 }}>📍 BruinCapsule</span>
         {user ? (
           <>
             <div style={{ width: 1, height: 16, background: "rgba(255,255,255,0.15)" }} />
@@ -427,10 +427,16 @@ export default function MapPage() {
           
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16, padding: "0 20px" }}>
             <div>
-              <h2 style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 18, fontWeight: 700 }}>{selectedCapsule.title}</h2>
-              <p style={{ fontSize: 11, color: "#555", marginTop: 2 }}>
-                {selectedCapsule.created_at ? new Date(selectedCapsule.created_at).toLocaleDateString() : 'Iconic Location'}
-              </p>
+<h2 style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 18, fontWeight: 700 }}>
+    {selectedCapsule.title}
+  </h2>
+  {/* Add this line to show the capsule's specific description/caption */}
+  <p style={{ fontSize: 13, color: "#aaa", marginTop: 4 }}>
+    {selectedCapsule.caption} 
+  </p>
+  <p style={{ fontSize: 11, color: "#555", marginTop: 2 }}>
+    {selectedCapsule.created_at ? new Date(selectedCapsule.created_at).toLocaleDateString() : 'Iconic Location'}
+  </p>
             </div>
             <div style={{ display: "flex", gap: 8 }}>
               {/* VIEW TOGGLE */}
