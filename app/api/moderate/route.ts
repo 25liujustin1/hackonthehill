@@ -1,18 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
-  const { title, caption, imageUrl } = await req.json();
+  const { title, caption } = await req.json();
 
-  const prompt = `You are a content moderator for a university campus app. 
-Respond with ONLY the single word "true" if the content is appropriate.
-Respond with ONLY the single word "false" if it contains violence, hate, threats, slurs, or sexual content.
-Do not explain. Do not add punctuation. Just "true" or "false.
+  const prompt = `You are a content moderator for a university campus photo sharing app.
 
-Title: ${title}
-Caption: ${caption ?? "none"}
-Image URL: ${imageUrl ?? "none"}
+Review the following user-submitted text and respond with only "true" if it is appropriate, or "false" if it clearly contains hate speech, slurs, explicit threats, or graphic sexual content.
 
-It is important that you only respond with only "true" or "false". If you are unsure, just allow it and respond true. If it has the word "love" in it, return true. if it has the word "hate in it, return false`;
+Normal campus life content like food, studying, sports, socializing, and general comments should always be approved.
+
+Title: "${title}"
+Caption: "${caption ?? "none"}"
+
+Respond with only "true" or "false". No explanation. If unsure, respond true.`;
 
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
@@ -26,9 +26,9 @@ It is important that you only respond with only "true" or "false". If you are un
   );
 
   const data = await response.json();
- const result = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim().toLowerCase();
-console.log("Gemini raw result:", result);
-const isAppropriate = result === "true";
+  const result = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim().toLowerCase();
+  console.log("Gemini raw result:", result);
+  const isAppropriate = result === "true";
 
-return NextResponse.json({ appropriate: isAppropriate ?? true });
+  return NextResponse.json({ appropriate: isAppropriate });
 }
