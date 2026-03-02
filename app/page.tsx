@@ -261,38 +261,58 @@ export default function MapPage() {
         )}
 
         {capsules.map((cap) => {
-          const unlocked = isUnlocked(cap);
-          return (
-            <Overlay key={cap.id} anchor={[cap.lat, cap.lng]} offset={[16, 32]}>
-              <div
-                className="capsule-btn"
-                onClick={(e) => { e.stopPropagation(); openCapsule(cap); }}
-                style={{ cursor: unlocked ? "pointer" : "default", userSelect: "none" }}
-              >
-                <div style={{
-                  width: 32, height: 32, borderRadius: "50% 50% 50% 0",
-                  transform: "rotate(-45deg)",
-                  background: unlocked ? "linear-gradient(135deg,#f59e0b,#ef4444)" : "#3a3a3a",
-                  border: `2px solid ${unlocked ? "#fcd34d" : "#555"}`,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  boxShadow: unlocked ? "0 0 12px rgba(245,158,11,0.5)" : "none",
-                  transition: "all 0.3s ease"
-                }}>
-                  <span style={{ transform: "rotate(45deg)", fontSize: 14 }}>
-                    {unlocked ? "📦" : "🔒"}
-                  </span>
-                </div>
-                <div style={{
-                  marginTop: 4, background: "rgba(0,0,0,0.75)", color: "#fff",
-                  fontSize: 10, padding: "2px 6px", borderRadius: 4, whiteSpace: "nowrap",
-                  backdropFilter: "blur(4px)", maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis"
-                }}>
-                  {cap.title}
-                </div>
-              </div>
-            </Overlay>
-          );
-        })}
+  const unlocked = isUnlocked(cap);
+  // Calculate distance for the UI label
+  const distToCap = userPos 
+    ? Math.round(haversineMeters(userPos[0], userPos[1], cap.lat, cap.lng)) 
+    : null;
+
+  return (
+    <Overlay key={cap.id} anchor={[cap.lat, cap.lng]} offset={[16, 32]}>
+      <div
+        className="capsule-btn"
+        onClick={(e) => { e.stopPropagation(); openCapsule(cap); }}
+        style={{ cursor: unlocked ? "pointer" : "default", userSelect: "none", display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+      >
+        {/* The Capsule Icon */}
+        <div style={{
+          width: 32, height: 32, borderRadius: "50% 50% 50% 0",
+          transform: "rotate(-45deg)",
+          background: unlocked ? "linear-gradient(135deg,#f59e0b,#ef4444)" : "#3a3a3a",
+          border: `2px solid ${unlocked ? "#fcd34d" : "#555"}`,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          boxShadow: unlocked ? "0 0 12px rgba(245,158,11,0.5)" : "none",
+        }}>
+          <span style={{ transform: "rotate(45deg)", fontSize: 14 }}>
+            {unlocked ? "📦" : "🔒"}
+          </span>
+        </div>
+
+        {/* Distance & Status Labels */}
+        <div style={{
+          marginTop: 6, background: "rgba(10,10,10,0.9)", color: "#fff",
+          padding: "4px 8px", borderRadius: 6, border: "1px solid rgba(255,255,255,0.1)",
+          display: "flex", flexDirection: "column", alignItems: "center", gap: 2
+        }}>
+          <span style={{ fontSize: 11, fontWeight: 600 }}>{cap.title}</span>
+          
+          {distToCap !== null && (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <span style={{ fontSize: 10, color: unlocked ? "#4ade80" : "#fbbf24" }}>
+                {distToCap}m away
+              </span>
+              {!unlocked && (
+                <span style={{ fontSize: 9, color: "#666", fontStyle: 'italic' }}>
+                  Reach 30m to unlock
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </Overlay>
+  );
+})}
       </Map>
 
       <div style={{
