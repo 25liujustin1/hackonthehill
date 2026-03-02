@@ -33,7 +33,7 @@ function haversineMeters(lat1: number, lng1: number, lat2: number, lng2: number)
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-const UNLOCK_RADIUS_M = 150;
+const UNLOCK_RADIUS_M = 30;
 
 export default function MapPage() {
   const supabase = createClient();
@@ -59,6 +59,7 @@ export default function MapPage() {
   const [addingPost, setAddingPost] = useState(false);
   const addFileInputRef = useRef<HTMLInputElement>(null);
 
+  // 1. AUTH LOGIC
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUser(data.user ?? null));
     const { data: listener } = supabase.auth.onAuthStateChange((_e, session) => {
@@ -67,27 +68,51 @@ export default function MapPage() {
     return () => listener.subscription.unsubscribe();
   }, []);
 
+  // 2. HIGH-PERFORMANCE GEOLOCATION (Fixes Blue Marker & Re-center)
   useEffect(() => {
     if (!navigator.geolocation) return;
-    const id = navigator.geolocation.watchPosition(
-      (pos) => {
-        const coords: [number, number] = [pos.coords.latitude, pos.coords.longitude];
-        setUserPos(coords);
-      },
-      () => {},
-      { enableHighAccuracy: true }
-    );
-    return () => navigator.geolocation.clearWatch(id);
+
+    const geoOptions = {
+      enableHighAccuracy: true,
+      maximumAge: 0,
+      timeout: 2000
+    };
+
+    const updateLocation = (pos: GeolocationPosition) => {
+      setUserPos([pos.coords.latitude, pos.coords.longitude]);
+    };
+
+    const id = navigator.geolocation.watchPosition(updateLocation, () => {}, geoOptions);
+
+    const heartbeatId = setInterval(() => {
+      navigator.geolocation.getCurrentPosition(updateLocation, null, geoOptions);
+    }, 3000);
+
+    return () => {
+      navigator.geolocation.clearWatch(id);
+      clearInterval(heartbeatId);
+    };
   }, []);
 
+  // 3. CAPSULE FETCHING + B-PLATE INJECTION
   useEffect(() => {
     if (!user) return;
+    
     supabase
       .from("capsules")
       .select("*")
       .order("created_at", { ascending: false })
       .then(({ data }) => {
-        if (data) setCapsules(data as Capsule[]);
+        const bPlate: Capsule = { 
+          id: 'fixed-bplate-capsule', 
+          title: "Bruin Plate (B-Plate) 🥗", 
+          lat: 34.0719, 
+          lng: -118.4500, 
+          created_at: new Date().toISOString() 
+        };
+
+        if (data) setCapsules([bPlate, ...data]);
+        else setCapsules([bPlate]);
       });
   }, [user]);
 
